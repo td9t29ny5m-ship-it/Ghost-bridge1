@@ -6,7 +6,7 @@ const bedrockData = require('minecraft-data');
 const { Schematic } = require('prismarine-schematic');
 const { Vec3 } = require('vec3');
 
-const DEFAULT_VERSION = process.env.MC_BEDROCK_VERSION || '1.21.90';
+const DEFAULT_VERSION = process.env.MC_BEDROCK_VERSION || '1.26.51';
 const MAX_PREVIEW_BLOCKS = 2500;
 const UPDATE_FLAGS = 2; // BlockUpdateNetwork
 
@@ -143,10 +143,25 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     tell(loaded ? ('Preview: ' + loaded.name + ', ' + previewCount + ' blocks, anchor ' + anchor.x + ' ' + anchor.y + ' ' + anchor.z + (locked ? ' (locked).' : ' (unlocked).')) : 'No schematic preview is active.');
   }
 
+  const commandHandlers = new WeakSet();
+
   function attachPlayer(player) {
     activePlayer = player;
     playerPosition = null;
-    lastStatus = { connected: true, note: 'Player connected through relay.' };
+    lastStatus = { connected: true, note: 'Player connected through relay; waiting for server login and resource-pack negotiation.' };
+    player.on('close', () => {
+      if (activePlayer === player) {
+        activePlayer = null;
+        playerPosition = null;
+        lastStatus = { connected: false, note: 'Player disconnected.' };
+      }
+    });
+    log('Ghost preview engine detected a connecting player. Resource-pack negotiation is left untouched until the player joins.');
+  }
+
+  function attachCommandHandlers(player) {
+    if (!player || commandHandlers.has(player)) return;
+    commandHandlers.add(player);
     player.on('serverbound', (packet, destination) => {
       const name = packet && packet.name;
       const params = packet && packet.params || {};
@@ -156,19 +171,12 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       let command = null;
       if (name === 'text' && typeof params.message === 'string') command = params.message;
       if (name === 'command_request' && typeof params.command === 'string') command = params.command;
-      if (command && /^\/?\.?build\s+/i.test(command.trim())) {
+      if (command && /^\\/?\\.?build\\s+/i.test(command.trim())) {
         if (destination) destination.canceled = true;
         runCommand(command).catch(err => tell('Ghost Bridge: ' + err.message));
       }
     });
-    player.on('close', () => {
-      if (activePlayer === player) {
-        activePlayer = null;
-        playerPosition = null;
-        lastStatus = { connected: false, note: 'Player disconnected.' };
-      }
-    });
-    log('Ghost preview engine attached to a relay player.');
+    log('Ghost in-game commands enabled after the relay join event; initial resource-pack packets were not intercepted.');
   }
 
   return {
@@ -176,10 +184,13 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     attach(r) {
       relay = r;
       relay.on('connect', attachPlayer);
-      relay.on('join', player => {
-        if (player && typeof player.on === 'function' && player !== activePlayer) attachPlayer(player);
+      relay.on('join', () => {
+        // Resource-pack negotiation happens before join. Do not register a generic
+        // serverbound packet handler until the destination has completed login.
+        // This lets the relay forward pack responses/chunk requests untouched.
+        if (activePlayer) attachCommandHandlers(activePlayer);
       });
-      log('Ghost preview engine attached. Supports .schem/.schematic preview packets on the relay.');
+      log('Ghost preview engine attached. Resource-pack handshake is left untouched; in-game build commands activate after join.');
     },
     current() {
       return {
