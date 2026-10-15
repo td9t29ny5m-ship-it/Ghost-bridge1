@@ -14,6 +14,8 @@ const { createGhost } = require('./ghost')
 const WEB_PORT = +process.env.PORT || 3000
 const RELAY_PORT = +process.env.RELAY_PORT || 19134
 const PUBLIC_PORT = +process.env.PUBLIC_PORT || RELAY_PORT // the port players use from outside (differs when you use a tunnel)
+const RELAY_PUBLIC_HOST = String(process.env.RELAY_PUBLIC_HOST || '').trim() || null
+const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || PUBLIC_PORT // public UDP endpoint forwarded to RELAY_PORT
 const DATA = path.join(__dirname, 'data')
 const SCHEM_DIR = path.join(__dirname, 'schematics')
 for (const d of [DATA, SCHEM_DIR, path.join(DATA, 'profiles'), path.join(DATA, 'host-auth')]) fs.mkdirSync(d, { recursive: true })
@@ -107,10 +109,13 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     try { if (portal) await portal.end() } catch {}
     portal = null
     const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
-    const redirectTarget = await dns.promises.lookup(B.host, { family: 4 })
-    addLog('Resolved redirect target ' + B.host + ' to IPv4 ' + redirectTarget.address)
+    // Only set RELAY_PUBLIC_HOST when a public UDP endpoint forwards to RELAY_PORT.
+    const redirectHost = RELAY_PUBLIC_HOST || B.host
+    const redirectPort = RELAY_PUBLIC_HOST ? RELAY_PUBLIC_PORT : B.port
+    const redirectTarget = await dns.promises.lookup(redirectHost, { family: 4 })
+    addLog('Resolved redirect target ' + redirectHost + ' to IPv4 ' + redirectTarget.address + ':' + redirectPort)
     const nextPortal = new BedrockPortal({
-      ip: redirectTarget.address, port: B.port, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
+      ip: redirectTarget.address, port: redirectPort, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
       world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 1, maxMemberCount: 10 }
     })
     nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
@@ -123,7 +128,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
       return
     }
     B.portal = 'on'
-    addLog('Friends-list world is live and redirects directly to ' + B.host + ':' + B.port + ' (bypasses relay; compatible with hosts without public UDP)')
+    addLog(RELAY_PUBLIC_HOST ? ('Friends-list world redirects through public relay ' + RELAY_PUBLIC_HOST + ':' + RELAY_PUBLIC_PORT) : ('Friends-list world redirects directly to ' + B.host + ':' + B.port + ' (relay bypass mode; set RELAY_PUBLIC_HOST to use proxy traffic)'))
     if (pendingInviteGamertag && B.inviteStatus !== 'sent') {
       B.inviteStatus = 'sending'; B.inviteError = null
       try {
