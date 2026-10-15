@@ -96,9 +96,14 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     const args = (match[2] || '').trim();
 
     if (action === 'start') {
-      const fileName = path.basename(args);
-      if (!fileName || fileName !== args || !/^[\w .()-]{1,80}\.(schem|schematic)$/i.test(fileName)) {
+      let fileName = path.basename(args);
+      if (!fileName || fileName !== args || !/^[\w .()-]{1,80}(?:\.(schem|schematic))?$/i.test(fileName)) {
         throw new Error('For this first preview engine, upload a Sponge .schem or legacy .schematic file. .litematic and .mcstructure are not supported yet.');
+      }
+      if (!/\.(schem|schematic)$/i.test(fileName)) {
+        const found = ['.schem', '.schematic'].map(ext => fileName + ext).find(candidate => fs.existsSync(path.join(schemDir, candidate)));
+        if (!found) throw new Error('I cannot find ' + fileName + '.schem or ' + fileName + '.schematic in your uploaded schematics.');
+        fileName = found;
       }
       const filePath = path.join(schemDir, fileName);
       if (!fs.existsSync(filePath)) throw new Error('I cannot find "' + fileName + '" in your uploaded schematics.');
