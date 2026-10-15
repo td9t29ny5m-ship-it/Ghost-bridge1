@@ -55,6 +55,7 @@ async function hostLogin () {
     H.status = 'ready'; H.code = null; H.uri = null
     H.gamertag = await fetchGamertag(x).catch(() => null)
     addLog('Xbox host account signed in' + (H.gamertag ? ': ' + H.gamertag : ''))
+    if (B.status === 'running' && B.portal !== 'on') startPortal({ hostname: lastRequestHost }).catch(e => addLog('Portal recovery failed: ' + e.message))
   } catch (e) { H.status = 'error'; H.error = e.message; addLog('Host sign-in failed: ' + e.message) }
   hostLoginRunning = false
 }
@@ -78,14 +79,66 @@ async function detectPublicHost (req) {
 
 // ---------- the bridge: relay + Friends-list session ----------
 let ghost = null; let relay = null; let portal = null
+let portalRetryTimer = null
+let portalStartRunning = false
+let lastRequestHost = 'localhost'
 async function stopBridge () {
+  if (portalRetryTimer) { clearTimeout(portalRetryTimer); portalRetryTimer = null }
   try { if (portal) await portal.end() } catch {}
   try { if (relay) relay.close() } catch {}
   portal = null; relay = null; ghost = null; playerCode = null
   Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null })
 }
+async function startPortal (req = { hostname: lastRequestHost }) {
+  if (portalStartRunning || B.status !== 'running') return
+  if (portalRetryTimer) { clearTimeout(portalRetryTimer); portalRetryTimer = null }
+  portalStartRunning = true
+  try {
+    if (H.status !== 'ready') {
+      B.portal = 'off'
+      addLog('Friends session waiting for host sign-in. It will start automatically after sign-in completes.')
+      return
+    }
+    B.publicHost = B.publicHost || await detectPublicHost(req || { hostname: lastRequestHost })
+    B.portal = 'starting'
+    B.portalError = null
+    try { if (portal) await portal.end() } catch {}
+    portal = null
+    const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
+    const nextPortal = new BedrockPortal({
+      ip: B.publicHost, port: PUBLIC_PORT, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
+      world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 0, maxMemberCount: 10 }
+    })
+    nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
+    nextPortal.use(Modules.AutoFriendAccept)
+    portal = nextPortal
+    await nextPortal.start()
+    if (B.status !== 'running') {
+      try { await nextPortal.end() } catch {}
+      if (portal === nextPortal) portal = null
+      return
+    }
+    B.portal = 'on'
+    addLog('Friends-list world "Ghost Proxy" is live (points at ' + B.publicHost + ':' + PUBLIC_PORT + ')')
+  } catch (e) {
+    B.portal = 'error'
+    B.portalError = e.message
+    addLog('Friends-list session failed: ' + e.message)
+    if (B.status === 'running' && H.status === 'ready' && !portalRetryTimer) {
+      addLog('Will retry the Friends session automatically in 20 seconds.')
+      portalRetryTimer = setTimeout(() => {
+        portalRetryTimer = null
+        startPortal({ hostname: lastRequestHost }).catch(err => addLog('Portal retry failed: ' + err.message))
+      }, 20000)
+      if (portalRetryTimer && typeof portalRetryTimer.unref === 'function') portalRetryTimer.unref()
+    }
+  } finally {
+    portalStartRunning = false
+  }
+}
 async function startBridge (host, port, req) {
   await checkDest(host, port)
+  lastRequestHost = (req && req.hostname) || lastRequestHost
   await stopBridge()
   B.status = 'starting'; B.host = host; B.port = port; B.error = null
   try {
@@ -107,20 +160,7 @@ async function startBridge (host, port, req) {
     addLog(`Relay up on UDP ${RELAY_PORT} -> ${host}:${port} (Minecraft ${ghost.version})`)
   } catch (e) { B.status = 'error'; B.error = e.message; addLog('Relay failed: ' + e.message); return }
 
-  B.publicHost = await detectPublicHost(req)
-  B.portal = 'starting'; B.portalError = null
-  try {
-    if (H.status !== 'ready') { B.portal = 'off'; addLog('Friends-list world not started (host account not signed in). Add Server and LAN methods still work.'); return }
-    const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
-    portal = new BedrockPortal({
-      ip: B.publicHost, port: PUBLIC_PORT, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
-      world: { hostName: 'Ghost Proxy', name: host, version: ghost.version, memberCount: 0, maxMemberCount: 10 }
-    })
-    portal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
-    portal.use(Modules.AutoFriendAccept)
-    await portal.start()
-    B.portal = 'on'; addLog(`Friends-list world "Ghost Proxy" is live (points at ${B.publicHost}:${PUBLIC_PORT})`)
-  } catch (e) { B.portal = 'error'; B.portalError = e.message; addLog('Friends-list session failed: ' + e.message) }
+  await startPortal(req)
 }
 
 // ---------- web server ----------
