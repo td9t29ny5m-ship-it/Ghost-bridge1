@@ -1,237 +1,177 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ghost Bridge</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>Ghost Bridge | Control Center</title>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--text:#14161a;--sub:#5d6470;--line:#e2e5ea;--acc:#2f6fed;--accText:#fff;--ok:#1a9a54;--warn:#c98a00;--bad:#d03a3a;--chip:#eef1f6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--text:#eceef2;--sub:#98a0ad;--line:#272b33;--acc:#5b8cff;--accText:#0b1020;--ok:#3ed17c;--warn:#f0b429;--bad:#ff6b6b;--chip:#222732;color-scheme:dark}}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:640px;margin:0 auto;padding:14px 14px 60px}
-h1{font-size:22px;margin:6px 0 2px}h2{font-size:16px;margin:0 0 8px}
-.sub{color:var(--sub);font-size:14px;margin:0 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px}
-button{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--text);font-size:15px;font-weight:600}
-button.p{background:var(--acc);color:var(--accText);border-color:var(--acc)}
-button.d{color:var(--bad)}
-button:disabled{opacity:.45}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
-.grid button{padding:12px 6px;font-size:14px}
-.chip{display:inline-block;padding:3px 10px;border-radius:99px;background:var(--chip);font-size:13px;font-weight:600}
-.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
-.code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:3px;background:var(--chip);border-radius:10px;padding:10px 12px;display:inline-block;margin:6px 0}
-.feed,.log{font:13px/1.4 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-word}
-ol{padding-left:20px;margin:6px 0}li{margin:4px 0}
-.file{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);word-break:break-all}
-.file:first-of-type{border-top:0}
-.bar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden;margin:8px 0}.bar>i{display:block;height:100%;background:var(--ok);width:0}
-.hide{display:none}
-a{color:var(--acc)}
-label.fp{display:block;text-align:center;padding:12px;border:1px dashed var(--line);border-radius:10px;color:var(--sub)}
+:root{color-scheme:dark;--bg:#080b12;--panel:#111722;--panel2:#151e2c;--line:#253145;--text:#f4f7fc;--muted:#9caac0;--blue:#76a7ff;--cyan:#63e6d5;--green:#54e39a;--yellow:#ffd166;--red:#ff7584;--radius:20px}
+*{box-sizing:border-box}html{background:var(--bg);scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 10% -10%,#1b3260 0,transparent 38%),radial-gradient(ellipse at 100% 0,#123b3d 0,transparent 30%),var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#78a7ff,#5be1d0);color:#08111c;font-weight:950;font-size:21px;box-shadow:0 8px 30px #4aabdd30}.eyebrow{text-transform:uppercase;letter-spacing:2px;font-size:10px;font-weight:800;color:var(--cyan)}h1{font-size:21px;letter-spacing:-.5px;margin:0}h2{font-size:16px;margin:0;font-weight:800;letter-spacing:-.2px}p{margin:0}.muted{color:var(--muted)}.small{font-size:12px}.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#ffffff08;border-radius:99px;padding:7px 10px;font-size:12px;font-weight:750;color:var(--muted);white-space:nowrap}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor}.badge.good{color:var(--green);border-color:#54e39a45}.badge.warn{color:var(--yellow);border-color:#ffd16645}.badge.bad{color:var(--red);border-color:#ff758445}
+.hero{border:1px solid #355074;background:linear-gradient(125deg,#162642f2,#10202bf2 70%,#102c2b);border-radius:26px;padding:22px;margin-bottom:15px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:180px;height:180px;right:-70px;top:-90px;border-radius:50%;border:1px solid #a8d5ff20;box-shadow:0 0 0 22px #a8d5ff08,0 0 0 46px #a8d5ff05;pointer-events:none}.hero h2{font-size:24px;line-height:1.15;max-width:390px;margin:10px 0}.hero p{max-width:490px;color:#c0cee0;font-size:14px}.hero .badge{background:#07121a70}.hero-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:linear-gradient(160deg,#131b28f5,#0e141df5);border:1px solid var(--line);border-radius:var(--radius);padding:17px;min-width:0;box-shadow:0 12px 35px #00000012}.card.full{grid-column:1/-1}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.stepnum{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:10px;background:#76a7ff18;border:1px solid #76a7ff38;color:var(--blue);font-size:12px;font-weight:900}.headleft{display:flex;align-items:center;gap:10px;min-width:0}.inputrow{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:9px}.field{display:block;margin:12px 0 0}.field span{display:block;font-size:12px;color:var(--muted);font-weight:750;margin:0 0 6px}.field input{width:100%;min-width:0;background:#090e16;border:1px solid #2b3a50;border-radius:12px;padding:13px 12px;color:var(--text);font:inherit;outline:none}.field input:focus{border-color:var(--blue);box-shadow:0 0 0 3px #76a7ff20}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.btn{appearance:none;border:1px solid #2a3a50;background:#1a2534;color:var(--text);padding:12px 14px;border-radius:12px;font:inherit;font-weight:800;cursor:pointer;transition:transform .12s,border-color .12s;min-height:44px}.btn:active{transform:scale(.98)}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.primary{color:#06121a;border:0;background:linear-gradient(110deg,var(--cyan),var(--blue));box-shadow:0 6px 22px #63e6d51b}.btn.danger{color:#ff9aa4;background:#351b24;border-color:#6d2e3c}.btn.ghost{background:transparent}.btn.block{width:100%}.note{padding:11px 12px;border-radius:12px;background:#ffffff06;border:1px solid var(--line);font-size:12px;color:var(--muted);margin-top:12px}.notice{border-color:#7a6333;background:#2b2414;color:#ffe1a0}.statusline{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff0b}.statusline:last-child{border:0}.statusicon{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:10px;background:#ffffff08;color:var(--muted);font-size:14px}.statuscopy{min-width:0;flex:1}.statuscopy strong{display:block;font-size:13px}.statuscopy span{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere}.addr{font:750 13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;padding:12px;border:1px solid #2a3a50;border-radius:12px;background:#080d14;overflow-wrap:anywhere}.joinsteps{list-style:none;margin:0;padding:0;counter-reset:steps}.joinsteps li{counter-increment:steps;display:flex;gap:11px;padding:11px 0;border-bottom:1px solid #ffffff0b;font-size:13px}.joinsteps li:last-child{border:0}.joinsteps li:before{content:counter(steps);display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:8px;background:#76a7ff19;color:var(--blue);font-weight:900;font-size:11px}.log{font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:230px;overflow:auto;padding:12px;border-radius:12px;background:#080d14;border:1px solid #202c3d;color:#b9c9dd}.hide{display:none!important}a{color:var(--cyan)}.footer{text-align:center;color:#6f7f96;font-size:11px;padding:22px 0}.pillrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.pill{font-size:11px;padding:5px 9px;border-radius:99px;background:#ffffff08;border:1px solid var(--line);color:var(--muted)}.file{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff0b;overflow-wrap:anywhere}.file:last-child{border-bottom:0}.upload{display:block;text-align:center;border:1px dashed #35465e;padding:14px;border-radius:12px;color:var(--muted);cursor:pointer}.upload input{display:none}#login{max-width:460px;margin:50px auto}.error{color:var(--red);font-size:12px;margin-top:8px;overflow-wrap:anywhere}
+@media(min-width:600px){main{padding:28px 22px 70px}.hero{padding:28px}.card{padding:20px}.hero h2{font-size:30px}}@media(max-width:380px){.grid{grid-template-columns:1fr}.card.full{grid-column:auto}.inputrow{grid-template-columns:minmax(0,1fr) 90px}.badge{font-size:11px}.hero h2{font-size:22px}}
 </style>
 </head>
 <body>
 <main>
-  <h1>Ghost Bridge</h1>
-  <p class="sub">Join a Bedrock server from your console with schematic overlays.</p>
-
+  <header class="top">
+    <div class="brand"><div class="logo">GB</div><div><div class="eyebrow">Bedrock connection hub</div><h1>Ghost Bridge</h1></div></div>
+    <span id="overall" class="badge"><i class="dot"></i><span>Checking</span></span>
+  </header>
   <section id="login" class="card hide">
-    <h2>Sign in</h2>
-    <p class="sub">Enter the admin password for this site.</p>
-    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
-    <p id="loginErr" class="bad" style="margin:8px 0 0"></p>
-    <div class="row" style="margin-top:10px"><button class="p" id="loginBtn">Sign in</button></div>
+    <div class="section-head"><div class="headleft"><div class="stepnum">GB</div><div><h2>Welcome back</h2><p class="muted small">Sign in to manage your private bridge.</p></div></div></div>
+    <label class="field"><span>ADMIN PASSWORD</span><input id="pw" type="password" autocomplete="current-password" placeholder="Enter your site password"></label>
+    <p id="loginErr" class="error"></p><div class="actions"><button class="btn primary block" id="loginBtn">Unlock dashboard</button></div>
   </section>
-
   <div id="app" class="hide">
-    <section class="card">
-      <h2>1. Xbox host account <span id="hostChip" class="chip"></span></h2>
-      <p class="sub">A separate (alt) Xbox account whose &ldquo;world&rdquo; shows in your console's Friends list. Don't use your main account.</p>
-      <div id="hostBody"></div>
+    <section class="hero">
+      <div class="hero-row"><span class="badge"><i class="dot" style="color:var(--cyan)"></i> YOUR CONNECTION WORKSPACE</span><span id="uptime" class="small muted">Live status updates</span></div>
+      <h2>Get into your server.<br>Skip the guesswork.</h2>
+      <p>Choose a Bedrock server, start the bridge, then join the Ghost Proxy session from your console's Friends list.</p>
+      <div class="pillrow"><span class="pill">Phone-friendly</span><span class="pill">Live diagnostics</span><span class="pill">One-tap reconnect</span></div>
     </section>
 
-    <section class="card">
-      <h2>2. Server <span id="bridgeChip" class="chip"></span></h2>
-      <div class="row">
-        <div style="flex:3;min-width:160px"><input id="ip" placeholder="Server IP (e.g. donutsmp.net)" autocapitalize="off" autocorrect="off" inputmode="url"></div>
-        <div style="flex:1;min-width:90px"><input id="port" placeholder="Port" inputmode="numeric" value="19132"></div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <button class="p" id="startBtn">Start</button>
-        <button class="d" id="stopBtn">Stop</button>
-      </div>
-      <p id="bridgeMsg" class="sub" style="margin-top:10px"></p>
-    </section>
+    <div class="grid">
+      <section class="card">
+        <div class="section-head"><div class="headleft"><div class="stepnum">01</div><div><h2>Xbox host account</h2><p class="muted small">Your alt account</p></div></div><span id="hostChip" class="badge">Checking</span></div>
+        <div id="hostBody"><p class="muted small">Checking sign-in status…</p></div>
+        <div class="note">The host session only becomes joinable when the portal is running. Signed in does not automatically mean online.</div>
+      </section>
 
-    <section class="card">
-      <h2>3. Join on your console</h2>
-      <ol id="steps"></ol>
-      <div id="playerCode" class="hide">
-        <p class="sub" style="margin:8px 0 0">First join: you were shown a sign-in code. Go to <a id="pcLink" href="https://www.microsoft.com/link" target="_blank" rel="noopener">microsoft.com/link</a>, enter it, then join again.</p>
-        <div class="code" id="pcCode"></div>
-      </div>
-    </section>
+      <section class="card">
+        <div class="section-head"><div class="headleft"><div class="stepnum">02</div><div><h2>Bridge status</h2><p class="muted small">Connection health</p></div></div><span id="bridgeChip" class="badge">Checking</span></div>
+        <div class="statusline"><div class="statusicon">↗</div><div class="statuscopy"><strong>Destination relay</strong><span id="relayStatus">Waiting for status…</span></div></div>
+        <div class="statusline"><div class="statusicon">◎</div><div class="statuscopy"><strong>Console Friends session</strong><span id="portalStatus">Waiting for status…</span></div></div>
+        <div class="statusline"><div class="statusicon">⌁</div><div class="statuscopy"><strong>Build version</strong><span id="version">Checking…</span></div></div>
+      </section>
 
-    <section class="card">
-      <h2>Controller <span id="playerChip" class="chip"></span></h2>
-      <p class="sub">Use your phone instead of typing in console chat. Walk around a little in-game first so the proxy knows where you are.</p>
-      <div class="row">
-        <div style="flex:1;min-width:150px"><select id="fileSel"></select></div>
-        <button class="p" id="previewBtn">Preview</button>
-      </div>
-      <div class="grid" id="btns"></div>
-      <div class="bar"><i id="barFill"></i></div>
-      <div id="progress" class="sub"></div>
-      <div class="row" style="margin-top:6px"><div style="flex:1"><input id="cmd" placeholder="Other command (e.g. layer range 2 6)" autocapitalize="off" autocorrect="off"></div><button id="sendBtn">Send</button></div>
-      <div class="feed" id="feed" style="margin-top:10px"></div>
-    </section>
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">03</div><div><h2>Choose your destination</h2><p class="muted small">Enter the Bedrock server you want to reach.</p></div></div></div>
+        <div class="inputrow">
+          <label class="field" style="margin-top:0"><span>SERVER ADDRESS</span><input id="ip" placeholder="e.g. donutsmp.net" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"></label>
+          <label class="field" style="margin-top:0"><span>PORT</span><input id="port" placeholder="19132" value="19132" inputmode="numeric"></label>
+        </div>
+        <div class="actions"><button class="btn primary" id="startBtn">Start bridge</button><button class="btn danger" id="stopBtn">Stop bridge</button><button class="btn ghost" id="reconnectBtn">Reconnect</button></div>
+        <p id="bridgeMsg" class="note">Enter your server address, then start the bridge.</p>
+        <p id="connectErr" class="error"></p>
+      </section>
 
-    <section class="card">
-      <h2>Schematics</h2>
-      <p class="sub">.litematic, .schem, .schematic, .nbt, .mcstructure</p>
-      <label class="fp"><input id="up" type="file" class="hide" multiple>Tap to upload from your phone</label>
-      <div id="files" style="margin-top:8px"></div>
-    </section>
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">04</div><div><h2>Join from your PS5</h2><p class="muted small">Follow these steps in order.</p></div></div><button id="copyAddr" class="btn ghost">Copy address</button></div>
+        <div id="publicAddr" class="addr">Start the bridge to generate your connection address.</div>
+        <ol id="steps" class="joinsteps" style="margin-top:12px">
+          <li>Sign in the alt Xbox host account.</li><li>Enter your server and tap Start bridge.</li><li>Open Minecraft on your console and go to Play → Friends.</li>
+        </ol>
+        <div class="note notice">Friend requests can only be processed while the host's portal session is running. If the host is offline, start the bridge first, then send the request again.</div>
+      </section>
 
-    <section class="card">
-      <h2>Log</h2>
-      <div class="log" id="log"></div>
-      <div class="row" style="margin-top:10px"><button id="outBtn">Sign out</button></div>
-    </section>
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">05</div><div><h2>Connection diagnostics</h2><p class="muted small">Plain-English status and recent events.</p></div></div><button id="refreshBtn" class="btn ghost">Refresh</button></div>
+        <div id="diagnostic" class="note">Waiting for the first status check…</div>
+        <div id="log" class="log" style="margin-top:12px">No events yet.</div>
+        <div class="actions"><button id="copyDiag" class="btn">Copy diagnostics</button><button id="outBtn" class="btn ghost">Sign out</button></div>
+      </section>
+
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">+</div><div><h2>Extra tools</h2><p class="muted small">Files and schematic experiments</p></div></div></div>
+        <p class="muted small">Schematic uploads can be stored here, but automated building, layer controls, and in-game command forwarding are not implemented in the current Ghost Bridge engine. These controls are intentionally not shown as working features.</p>
+        <label class="upload" style="margin-top:12px">Tap to upload schematic files<input id="up" type="file" multiple accept=".litematic,.schem,.schematic,.nbt,.mcstructure"></label>
+        <div id="files" style="margin-top:8px"></div>
+      </section>
+    </div>
   </div>
+  <footer class="footer">Ghost Bridge · Keep your host account separate from your main account.</footer>
 </main>
-
 <script>
-const $ = id => document.getElementById(id)
-let token = null; try { token = localStorage.getItem('gb_token') } catch {}
-let state = null; let timer = null
-
-function h (tag, props, ...kids) {
-  const e = document.createElement(tag)
-  for (const [k, v] of Object.entries(props || {})) { if (k === 'onclick') e.onclick = v; else if (k === 'class') e.className = v; else e.setAttribute(k, v) }
-  for (const k of kids) e.append(k && k.nodeType ? k : document.createTextNode(k == null ? '' : k))
-  return e
+const $=id=>document.getElementById(id);
+let token=null,state=null,timer=null,lastPoll=0;
+try{token=localStorage.getItem('gb_token')}catch{}
+try{$('ip').value=localStorage.getItem('gb_host')||'';$('port').value=localStorage.getItem('gb_port')||'19132'}catch{}
+async function api(path,opts={}){
+ const headers={...(opts.headers||{}),Authorization:'Bearer '+token};
+ if(opts.json)headers['Content-Type']='application/json';
+ const r=await fetch('/api/'+path,{...opts,headers,body:opts.json?JSON.stringify(opts.json):opts.body,cache:'no-store'});
+ if(r.status===401&&path!=='login'){showLogin();throw new Error('Your dashboard session expired. Sign in again.')}
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(j.error||'Request failed ('+r.status+')');
+ return j;
 }
-async function api (path, opts = {}) {
-  const r = await fetch('/api/' + path, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + token, ...(opts.json ? { 'Content-Type': 'application/json' } : {}) }, body: opts.json ? JSON.stringify(opts.json) : opts.body })
-  if (r.status === 401 && path !== 'login') { showLogin(); throw new Error('signed out') }
-  const j = await r.json().catch(() => ({}))
-  if (!r.ok) throw new Error(j.error || 'Request failed')
-  return j
+function badge(el,text,type){el.className='badge'+(type?' '+type:'');el.replaceChildren();const d=document.createElement('i');d.className='dot';el.append(d,document.createTextNode(text))}
+function node(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
+function showLogin(){token=null;try{localStorage.removeItem('gb_token')}catch{}$('login').classList.remove('hide');$('app').classList.add('hide');clearInterval(timer)}
+async function doLogin(){
+ $('loginErr').textContent='';
+ try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('pw').value})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Sign in failed');token=j.token;try{localStorage.setItem('gb_token',token)}catch{}start()}
+ catch(e){$('loginErr').textContent=e.message}
 }
-function showLogin () { token = null; try { localStorage.removeItem('gb_token') } catch {}; $('login').classList.remove('hide'); $('app').classList.add('hide'); clearInterval(timer) }
-async function doLogin () {
-  $('loginErr').textContent = ''
-  try {
-    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) })
-    const j = await r.json(); if (!r.ok) throw new Error(j.error)
-    token = j.token; try { localStorage.setItem('gb_token', token) } catch {}
-    start()
-  } catch (e) { $('loginErr').textContent = e.message }
+$('loginBtn').onclick=doLogin;$('pw').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('outBtn').onclick=showLogin;
+function render(s){
+ state=s;lastPoll=Date.now();const H=s.host||{},B=s.bridge||{};
+ const running=B.status==='running',starting=B.status==='starting';
+ badge($('overall'),running&&B.portal==='on'?'Ready':running?'Relay active':starting?'Starting':B.status==='error'?'Needs attention':'Not connected',running&&B.portal==='on'?'good':starting?'warn':B.status==='error'?'bad':'');
+ badge($('hostChip'),H.status==='ready'?'Signed in':H.status==='signing_in'?'Waiting for sign-in':H.status==='error'?'Sign-in error':'Signed out',H.status==='ready'?'good':H.status==='error'?'bad':'warn');
+ const hb=$('hostBody');hb.replaceChildren();
+ if(H.status==='ready'){
+  const who=node('div','addr',H.gamertag||'Xbox host authenticated');who.style.marginTop='8px';hb.append(node('p','muted small','Account authentication is complete.'),who);
+ }else if(H.status==='signing_in'){
+  hb.append(node('p','muted small','On another device, open the link and enter this code using your alt Xbox account.'));
+  const a=node('a','','Open Microsoft sign-in');a.href=H.uri||'https://www.microsoft.com/link';a.target='_blank';a.rel='noopener';hb.append(a,node('div','addr',H.code||'Waiting for code'));
+ }else{
+  if(H.error)hb.append(node('p','error',H.error));
+  const b=node('button','btn primary block','Sign in host account');b.style.marginTop='10px';b.onclick=async()=>{try{await api('host/login',{method:'POST'});await poll()}catch(e){$('connectErr').textContent=e.message}};hb.append(b);
+ }
+ badge($('bridgeChip'),B.status||'unknown',running?'good':B.status==='error'?'bad':starting?'warn':'');
+ $('relayStatus').textContent=running?'Listening on UDP '+(s.relayPort||'unknown')+' → '+(B.host||'?')+':'+(B.port||'?'):B.status==='error'?(B.error||'Relay failed'):starting?'Opening the relay…':'Not running';
+ $('portalStatus').textContent=B.portal==='on'?'Online as a joinable Friends session':B.portal==='error'?'Failed: '+(B.portalError||'unknown error'):'Offline. Start the bridge after host sign-in.';
+ $('version').textContent='Minecraft Bedrock '+(s.version||'unknown');
+ $('startBtn').disabled=starting;$('stopBtn').disabled=!(running||starting);$('reconnectBtn').disabled=starting;
+ if(document.activeElement!==$('ip')&&B.host)$('ip').value=B.host;
+ if(document.activeElement!==$('port')&&B.port)$('port').value=B.port;
+ $('bridgeMsg').textContent=B.error?'Connection error: '+B.error:running?'Bridge is running. Keep this service awake and use the console steps below.':starting?'Starting the relay and Friends session…':'Ready when you are. The host session starts with the bridge.';
+ $('connectErr').textContent='';
+ const addr=(B.publicHost&&B.publicPort)?B.publicHost+':'+B.publicPort:'';
+ $('publicAddr').textContent=addr||'Public address appears after the bridge starts.';
+ const steps=$('steps');steps.replaceChildren();
+ const lines=[
+  'Make sure the alt Xbox account is signed in: '+(H.gamertag||'host account')+'.',
+  running?'Bridge is running and targeting '+(B.host||'your server')+':'+(B.port||19132)+'.':'Enter the destination above and tap Start bridge.',
+  'On PS5, open Minecraft → Play → Friends and look for “Ghost Proxy”.',
+  B.portal==='on'?'If needed, add '+(H.gamertag||'the host gamertag')+' as a friend. Requests can only be accepted while the portal is online.': 'If the Friends session does not appear, check that the host is signed in and the portal status says Online.',
+  'Join the Ghost Proxy session. It should redirect you to the destination selected above.'
+ ];
+ lines.forEach((t,i)=>{const li=node('li','',t);steps.append(li)});
+ const diag=$('diagnostic');
+ if(B.status==='error')diag.textContent='The relay failed. Check the latest log entries below. Confirm the server address and port, then use Reconnect.';
+ else if(H.status!=='ready')diag.textContent='The host account is not authenticated. Sign in with your alt Xbox account before starting the bridge.';
+ else if(!running)diag.textContent='The host account is signed in, but the bridge is not running. Start the bridge to create the joinable session.';
+ else if(B.portal==='error')diag.textContent='The relay is up, but the Xbox Friends session failed. This can prevent friend requests and console joining. See the portal error in the log.';
+ else diag.textContent='Status checks are updating automatically every 3 seconds. If the account is signed in but the Friends session is offline, the portal is not running.';
+ $('uptime').textContent='Updated '+new Date().toLocaleTimeString();
+ $('log').textContent=(s.logs||[]).map(l=>new Date(l.t).toLocaleTimeString()+'  '+l.m).join('\n')||'No recent events yet.';
+ renderFiles(s.files||[]);
 }
-$('loginBtn').onclick = doLogin
-$('pw').onkeydown = e => { if (e.key === 'Enter') doLogin() }
-$('outBtn').onclick = showLogin
-
-function chip (el, text, cls) { el.textContent = text; el.className = 'chip ' + (cls || '') }
-
-function render (s) {
-  state = s
-  const H = s.host; const B = s.bridge
-  // host account
-  const hb = $('hostBody'); hb.replaceChildren()
-  if (H.status === 'ready') {
-    chip($('hostChip'), 'signed in', 'ok')
-    hb.append(h('p', { class: 'sub' }, H.gamertag ? 'Host gamertag: ' : 'Signed in.'), ...(H.gamertag ? [h('div', { class: 'code', style: 'font-size:20px;letter-spacing:1px' }, H.gamertag)] : []))
-  } else if (H.status === 'signing_in') {
-    chip($('hostChip'), 'waiting', 'warn')
-    hb.append(h('p', { class: 'sub' }, 'On any device, open the link and enter this code with the alt Xbox account:'),
-      h('a', { href: H.uri || 'https://www.microsoft.com/link', target: '_blank', rel: 'noopener' }, H.uri || 'microsoft.com/link'),
-      h('div'), h('div', { class: 'code' }, H.code || '...'))
-  } else {
-    chip($('hostChip'), H.status === 'error' ? 'error' : 'signed out', H.status === 'error' ? 'bad' : 'warn')
-    if (H.error) hb.append(h('p', { class: 'bad' }, H.error))
-    hb.append(h('button', { class: 'p', onclick: () => api('host/login', { method: 'POST' }).then(poll) }, 'Sign in host account'))
-  }
-  // bridge
-  const run = B.status === 'running' || B.status === 'starting'
-  chip($('bridgeChip'), B.status, B.status === 'running' ? 'ok' : B.status === 'error' ? 'bad' : '')
-  $('startBtn').disabled = B.status === 'starting'; $('stopBtn').disabled = !run
-  if (run && document.activeElement !== $('ip')) { $('ip').value = B.host || ''; $('port').value = B.port || 19132 }
-  $('bridgeMsg').textContent = B.error ? B.error : B.status === 'running' ? `Relay on UDP ${s.relayPort} to ${B.host}:${B.port} (Minecraft ${s.version})` : `Minecraft version ${s.version}`
-  // steps
-  const st = $('steps'); st.replaceChildren()
-  const addr = `${B.publicHost || '<server ip>'}:${B.publicPort || s.relayPort}`
-  st.append(h('li', {}, B.status === 'running' ? 'Server is connected.' : 'Start the server above.'))
-  if (B.portal === 'on') st.append(h('li', { class: 'ok' }, `Console (PlayStation, Xbox, Switch): add ${H.gamertag || 'the host account'} as a friend, then Play > Friends > "Ghost Proxy".`))
-  else if (B.portal === 'error') st.append(h('li', { class: 'bad' }, 'Friends-list world failed: ' + (B.portalError || 'unknown error')))
-  else st.append(h('li', { class: 'warn' }, 'Console Friends-list world is off. Sign in the host account (step 1), then press Start again.'))
-  st.append(h('li', {}, `Phone or Windows: Servers > Add Server > ${addr}`))
-  if (s.localIps && s.localIps.length) st.append(h('li', {}, `At home on the same Wi-Fi, no host account: open a LAN app like BedrockTogether on your phone and enter ${s.localIps[0]}:${s.relayPort}. The console sees it under Friends > LAN Games.`))
-  const pc = s.playerCode
-  $('playerCode').classList.toggle('hide', !pc)
-  if (pc) { $('pcCode').textContent = pc.code; $('pcLink').href = pc.uri || 'https://www.microsoft.com/link' }
-  // controller
-  const p = s.player
-  chip($('playerChip'), p ? (p.player || 'connected') : 'no player', p ? 'ok' : '')
-  const sel = $('fileSel'); const prev = sel.value
-  sel.replaceChildren(...s.files.map(f => h('option', { value: f.name }, f.name)))
-  if (prev) sel.value = prev
-  $('previewBtn').disabled = !p || !s.files.length
-  if (!$('btns').children.length) buildButtons()
-  for (const b of $('btns').children) b.disabled = !p
-  $('sendBtn').disabled = !p
-  if (p && p.file) {
-    const pct = p.blocks ? Math.round(100 * p.done / p.blocks) : 0
-    $('barFill').style.width = pct + '%'
-    $('progress').textContent = `${p.file}: ${p.done}/${p.blocks} correct (${pct}%), ${p.wrong} wrong. Layer ${p.layer}, ${p.mode === 'follow' ? 'following you' : 'locked'}.`
-  } else { $('barFill').style.width = '0'; $('progress').textContent = p ? (p.located ? 'Pick a file and tap Preview.' : 'Move a little in-game so the proxy knows where you are.') : '' }
-  const fd = $('feed'); const atEnd = fd.scrollTop + fd.clientHeight >= fd.scrollHeight - 8
-  fd.textContent = s.feed.map(f => f.m).join('\n') || 'Command replies show here and in-game.'
-  if (atEnd) fd.scrollTop = fd.scrollHeight
-  // files
-  const fl = $('files'); fl.replaceChildren()
-  if (!s.files.length) fl.append(h('p', { class: 'sub' }, 'No schematics yet.'))
-  for (const f of s.files) fl.append(h('div', { class: 'file' }, h('span', {}, `${f.name} (${(f.size / 1024).toFixed(0)} KB)`),
-    h('button', { class: 'd', onclick: () => { if (confirm('Delete ' + f.name + '?')) api('schematics/' + encodeURIComponent(f.name), { method: 'DELETE' }).then(poll) } }, 'Delete')))
-  // log
-  $('log').textContent = s.logs.map(l => new Date(l.t).toLocaleTimeString() + '  ' + l.m).join('\n')
+function renderFiles(files){
+ const el=$('files');el.replaceChildren();
+ if(!files.length){el.append(node('p','muted small','No uploaded files.'));return}
+ files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' · '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api('schematics/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
 }
-
-const BUTTONS = [
-  ['Place', 'build place', 'p'], ['Cancel', 'build cancel'], ['Undo', 'undo'],
-  ['Rotate', 'rotate'], ['Mirror X', 'mirror x'], ['Mirror off', 'mirror off'],
-  ['Up', 'build up'], ['Down', 'build down'], ['Unlock', 'build unlock'],
-  ['Layer auto', 'layer auto', 'p'], ['Layer up', 'layer up'], ['Layer down', 'layer down'],
-  ['All layers', 'layer all'], ['Next blocks', 'next'], ['Progress', 'progress'],
-  ['Materials', 'mats'], ['Layers', 'layers'], ['Info', 'info'],
-  ['Glow', 'style glow'], ['Glass', 'style glass'], ['Solid', 'style solid']
-]
-function buildButtons () {
-  for (const [label, cmd, cls] of BUTTONS) $('btns').append(h('button', { class: cls || '', onclick: () => send(cmd) }, label))
+async function poll(){if(!token)return;try{render(await api('state'))}catch(e){if(e.message!=='Your dashboard session expired. Sign in again.')$('diagnostic').textContent='Status check failed: '+e.message}}
+function start(){ $('login').classList.add('hide');$('app').classList.remove('hide');poll();clearInterval(timer);timer=setInterval(()=>{if(!document.hidden)poll()},3000)}
+async function connect(){
+ const host=$('ip').value.trim().replace(/^https?:\/\//i,'').replace(/\/.*$/,'');const port=Number($('port').value||19132);
+ if(!host){$('connectErr').textContent='Enter the server address first.';return}
+ if(!Number.isInteger(port)||port<1||port>65535){$('connectErr').textContent='Port must be a number from 1 to 65535.';return}
+ try{try{localStorage.setItem('gb_host',host);localStorage.setItem('gb_port',String(port))}catch{}$('connectErr').textContent='';$('startBtn').disabled=true;await api('connect',{method:'POST',json:{host,port}});await poll()}
+ catch(e){$('connectErr').textContent=e.message;await poll()}
 }
-async function send (text) { try { await api('command', { method: 'POST', json: { text } }); setTimeout(poll, 400) } catch (e) { alert(e.message) } }
-$('previewBtn').onclick = () => { if ($('fileSel').value) send('build start ' + $('fileSel').value) }
-$('sendBtn').onclick = () => { const v = $('cmd').value.trim(); if (v) { send(v); $('cmd').value = '' } }
-$('cmd').onkeydown = e => { if (e.key === 'Enter') $('sendBtn').click() }
-$('startBtn').onclick = async () => {
-  const host = $('ip').value.trim(); if (!host) return alert('Enter the server IP.')
-  try { await api('connect', { method: 'POST', json: { host, port: $('port').value.trim() || 19132 } }); poll() } catch (e) { alert(e.message) }
-}
-$('stopBtn').onclick = () => api('disconnect', { method: 'POST' }).then(poll)
-$('up').onchange = async e => {
-  for (const f of e.target.files) {
-    try { await api('schematics/' + encodeURIComponent(f.name), { method: 'PUT', body: f, headers: { 'Content-Type': 'application/octet-stream' } }) } catch (err) { alert(f.name + ': ' + err.message) }
-  }
-  e.target.value = ''; poll()
-}
-
-async function poll () { try { render(await api('state')) } catch {} }
-function start () { $('login').classList.add('hide'); $('app').classList.remove('hide'); poll(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) poll() }, 2000) }
-token ? start() : showLogin()
+$('startBtn').onclick=connect;$('reconnectBtn').onclick=async()=>{try{await api('disconnect',{method:'POST'});await connect()}catch(e){$('connectErr').textContent=e.message}};
+$('stopBtn').onclick=async()=>{try{await api('disconnect',{method:'POST'});await poll()}catch(e){$('connectErr').textContent=e.message}};
+$('refreshBtn').onclick=poll;
+$('copyAddr').onclick=async()=>{const t=$('publicAddr').textContent;if(t.includes('appears after'))return;try{await navigator.clipboard.writeText(t);$('copyAddr').textContent='Copied!';setTimeout(()=>$('copyAddr').textContent='Copy address',1500)}catch{$('connectErr').textContent='Copy was blocked by the browser. Select the address and copy it manually.'}};
+$('copyDiag').onclick=async()=>{const t='Ghost Bridge diagnostics\nHost: '+(state&&state.host?state.host.status:'unknown')+'\nBridge: '+(state&&state.bridge?state.bridge.status:'unknown')+'\nPortal: '+(state&&state.bridge?state.bridge.portal:'unknown')+'\nDestination: '+$('ip').value+':'+$('port').value+'\n\n'+$('diagnostic').textContent+'\n\n'+$('log').textContent;try{await navigator.clipboard.writeText(t);$('copyDiag').textContent='Copied!';setTimeout(()=>$('copyDiag').textContent='Copy diagnostics',1500)}catch{$('diagnostic').textContent=t}};
+$('up').onchange=async e=>{for(const f of e.target.files){try{await api('schematics/'+encodeURIComponent(f.name),{method:'PUT',body:f,headers:{'Content-Type':'application/octet-stream'}})}catch(err){alert(f.name+': '+err.message)}}e.target.value='';poll()};
+token?start():showLogin();
 </script>
 </body>
 </html>
