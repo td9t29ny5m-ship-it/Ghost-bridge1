@@ -4,7 +4,7 @@ Mobile-first dashboard for a Minecraft Bedrock relay and a Friends-session redir
 
 ## Runtime
 
-- Node.js 20 or newer.
+- Node.js 24 or newer (required by the current `bedrock-protocol` dependency).
 - Install dependencies with `npm install`; start with `npm start`.
 - The web dashboard listens on `PORT` (fallback `WEB_PORT`, then 3000).
 - The Bedrock relay listens on UDP `RELAY_PORT` (fallback `GAME_PORT`, then `SERVER_PORT`, then 19134). The hosting provider must expose this UDP port publicly.

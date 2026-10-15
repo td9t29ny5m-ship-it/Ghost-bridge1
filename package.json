@@ -8,7 +8,7 @@
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dependencies": {
     "bedrock-portal": "*",
