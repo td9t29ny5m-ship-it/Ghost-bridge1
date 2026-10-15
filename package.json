@@ -18,6 +18,7 @@
     "prismarine-nbt": "*",
     "prismarine-schematic": "*",
     "vec3": "*",
-    "express": "*"
+    "express": "*",
+    "prismarine-block": "*"
   }
 }

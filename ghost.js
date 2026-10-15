@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const bedrockData = require('minecraft-data');
+const prismarineBlock = require('prismarine-block');
 const { Schematic } = require('prismarine-schematic');
 const { Vec3 } = require('vec3');
 
@@ -20,6 +21,18 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
   let previewCount = 0;
   let lastStatus = { connected: false, note: 'Waiting for a player through the relay.' };
   let bedrockBlocks = null;
+  let bedrockMappings = null;
+  let BedrockBlock = null;
+
+  function canonicalStates(states) {
+    const ordered = {};
+    for (const key of Object.keys(states || {}).sort()) ordered[key] = states[key];
+    return JSON.stringify(ordered);
+  }
+
+  function canonicalBlockName(name) {
+    return String(name || '').replace(/^minecraft:/, '');
+  }
 
   function tell(message) {
     onSay(message);
@@ -38,17 +51,34 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     if (!bedrockBlocks) {
       const data = bedrockData('bedrock_' + DEFAULT_VERSION);
       if (!data || !data.blocksByName) throw new Error('No Bedrock block palette found for ' + DEFAULT_VERSION + '.');
+      if (!Array.isArray(data.blockMappings) || !Array.isArray(data.blockStates)) {
+        throw new Error('Bedrock block mappings are missing for ' + DEFAULT_VERSION + '. Update minecraft-data before using schematic preview.');
+      }
       bedrockBlocks = data.blocksByName;
+      bedrockMappings = new Map();
+      for (const mapping of data.blockMappings) {
+        if (!mapping || !mapping.pc || !mapping.pe || !mapping.pc.name) continue;
+        const key = canonicalBlockName(mapping.pc.name) + '|' + canonicalStates(mapping.pc.states);
+        bedrockMappings.set(key, mapping.pe);
+      }
+      BedrockBlock = prismarineBlock('bedrock_' + DEFAULT_VERSION);
+      if (!BedrockBlock || typeof BedrockBlock.getHash !== 'function') {
+        throw new Error('The installed prismarine-block version cannot calculate Bedrock runtime IDs.');
+      }
     }
     return bedrockBlocks;
   }
 
   function resolveRuntimeId(block) {
-    if (!block || !block.name || block.name === 'air' || block.name === 'cave_air' || block.name === 'void_air') return 0;
-    const name = String(block.name).replace(/^minecraft:/, '');
-    const target = getBedrockData()[name];
-    if (!target || !Number.isInteger(target.minStateId)) return null;
-    return target.minStateId;
+    if (!block || !block.name || ['air', 'cave_air', 'void_air'].includes(canonicalBlockName(block.name))) return 0;
+    getBedrockData();
+    const name = canonicalBlockName(block.name);
+    const states = typeof block.getProperties === 'function' ? block.getProperties() : (block.properties || {});
+    const target = bedrockMappings.get(name + '|' + canonicalStates(states));
+    if (!target || !target.name) return null;
+    const targetName = String(target.name).startsWith('minecraft:') ? target.name : 'minecraft:' + target.name;
+    const runtimeId = BedrockBlock.getHash(targetName, target.states || {});
+    return Number.isInteger(runtimeId) ? (runtimeId >>> 0) : null;
   }
 
   function sendBlock(pos, runtimeId) {
