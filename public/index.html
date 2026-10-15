@@ -80,6 +80,13 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <p class="muted small">Schematic uploads can be stored here, but automated building, layer controls, and in-game command forwarding are not implemented in the current Ghost Bridge engine. These controls are intentionally not shown as working features.</p>
         <label class="upload" style="margin-top:12px">Tap to upload schematic files<input id="up" type="file" multiple accept=".litematic,.schem,.schematic,.nbt,.mcstructure"></label>
         <div id="files" style="margin-top:8px"></div>
+        <div class="note">RESOURCE PACKS</div>
+        <label class="upload" style="margin-top:10px">Tap to upload resource packs (.mcpack or .zip)<input id="packUp" type="file" multiple accept=".mcpack,.zip"></label>
+        <div id="resourcePacks" style="margin-top:8px"></div>
+        <div class="note">ADD-ONS</div>
+        <label class="upload" style="margin-top:10px">Tap to upload add-ons (.mcaddon, .mcpack or .zip)<input id="addonUp" type="file" multiple accept=".mcaddon,.mcpack,.zip"></label>
+        <div id="addons" style="margin-top:8px"></div>
+        <p class="note notice">Uploads are stored on this website only. They do not automatically import packs into Minecraft on PS5 or attach them to a world. Render free storage may reset when the service restarts or redeploys.</p>
       </section>
     </div>
   </div>
@@ -158,12 +165,22 @@ function render(s){
  $('uptime').textContent='Updated '+new Date().toLocaleTimeString();
  $('log').textContent=(s.logs||[]).map(l=>new Date(l.t).toLocaleTimeString()+'  '+l.m).join('\n')||'No recent events yet.';
  renderFiles(s.files||[]);
+ renderAssetFiles('resourcePacks',s.resourcePacks||[],'resource-packs');
+ renderAssetFiles('addons',s.addons||[],'addons');
 }
 function renderFiles(files){
  const el=$('files');el.replaceChildren();
  if(!files.length){el.append(node('p','muted small','No uploaded files.'));return}
  files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' Â· '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api('schematics/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
 }
+function renderAssetFiles(id,files,route){
+ const el=$(id);el.replaceChildren();
+ if(!files.length){el.append(node('p','muted small','No files uploaded.'));return}
+ files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' · '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api(route+'/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
+}
+async function uploadAssets(inputId,route){const input=$(inputId);for(const f of input.files){try{await api(route+'/'+encodeURIComponent(f.name),{method:'PUT',body:f,headers:{'Content-Type':'application/octet-stream'}})}catch(err){alert(f.name+': '+err.message)}}input.value='';await poll()}
+$('packUp').onchange=()=>uploadAssets('packUp','resource-packs');
+$('addonUp').onchange=()=>uploadAssets('addonUp','addons');
 async function poll(){if(!token)return;try{render(await api('state'))}catch(e){if(e.message!=='Your dashboard session expired. Sign in again.')$('diagnostic').textContent='Status check failed: '+e.message}}
 function start(){ $('login').classList.add('hide');$('app').classList.remove('hide');poll();clearInterval(timer);timer=setInterval(()=>{if(!document.hidden)poll()},3000)}
 async function connect(){

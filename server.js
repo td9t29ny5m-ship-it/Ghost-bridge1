@@ -18,7 +18,9 @@ const RELAY_PUBLIC_HOST = String(process.env.RELAY_PUBLIC_HOST || '').trim() || 
 const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || PUBLIC_PORT // public UDP endpoint forwarded to RELAY_PORT
 const DATA = path.join(__dirname, 'data')
 const SCHEM_DIR = path.join(__dirname, 'schematics')
-for (const d of [DATA, SCHEM_DIR, path.join(DATA, 'profiles'), path.join(DATA, 'host-auth')]) fs.mkdirSync(d, { recursive: true })
+const PACK_DIR = path.join(DATA, 'resource-packs')
+const ADDON_DIR = path.join(DATA, 'addons')
+for (const d of [DATA, SCHEM_DIR, PACK_DIR, ADDON_DIR, path.join(DATA, 'profiles'), path.join(DATA, 'host-auth')]) fs.mkdirSync(d, { recursive: true })
 
 let ADMIN = process.env.ADMIN_PASSWORD
 if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No ADMIN_PASSWORD set. Temporary password: ${ADMIN}\n`) }
@@ -215,13 +217,18 @@ const auth = (req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')))
 
 const FILE_RE = /^[\w .()-]{1,80}\.(litematic|schem|schematic|nbt|mcstructure)$/i
+const PACK_RE = /^[\w .()-]{1,80}\.(mcpack|zip)$/i
+const ADDON_RE = /^[\w .()-]{1,80}\.(mcaddon|mcpack|zip)$/i
 const localIps = Object.values(os.networkInterfaces()).flat().filter(i => i && i.family === 'IPv4' && !i.internal).map(i => i.address)
-const list = () => fs.readdirSync(SCHEM_DIR).filter(f => FILE_RE.test(f)).map(f => ({ name: f, size: fs.statSync(path.join(SCHEM_DIR, f)).size }))
+const listDir = (dir, re) => fs.readdirSync(dir).filter(f => re.test(f)).map(f => ({ name: f, size: fs.statSync(path.join(dir, f)).size }))
+const list = () => listDir(SCHEM_DIR, FILE_RE)
+const listPacks = () => listDir(PACK_DIR, PACK_RE)
+const listAddons = () => listDir(ADDON_DIR, ADDON_RE)
 
 app.get('/api/state', auth, (req, res) => {
   const cur = ghost && ghost.current()
   res.json({ host: H, bridge: B, relayPort: RELAY_PORT, localIps, version: ghost ? ghost.version : require('./ghost').defaultVersion(), playerCode,
-    player: cur ? cur.status() : null, files: list(), feed: feed.slice(-30), logs: logs.slice(-40) })
+    player: cur ? cur.status() : null, files: list(), resourcePacks: listPacks(), addons: listAddons(), feed: feed.slice(-30), logs: logs.slice(-40) })
 })
 app.post('/api/host/login', auth, (req, res) => { hostLogin(); res.json({ ok: true }) })
 app.post('/api/connect', auth, express.json(), async (req, res) => {
@@ -262,6 +269,23 @@ app.delete('/api/schematics/:name', auth, (req, res) => {
   if (FILE_RE.test(name)) fs.rmSync(path.join(SCHEM_DIR, name), { force: true })
   res.json({ files: list() })
 })
+
+function registerAssetRoutes(route, dir, re, label, listing) {
+  app.put('/api/' + route + '/:name', auth, express.raw({ type: () => true, limit: '100mb' }), (req, res) => {
+    const name = path.basename(req.params.name)
+    if (!re.test(name)) return res.status(400).json({ error: 'Unsupported ' + label + ' file type.' })
+    if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'Empty upload.' })
+    fs.writeFileSync(path.join(dir, name), req.body)
+    res.json({ files: listing() })
+  })
+  app.delete('/api/' + route + '/:name', auth, (req, res) => {
+    const name = path.basename(req.params.name)
+    if (re.test(name)) fs.rmSync(path.join(dir, name), { force: true })
+    res.json({ files: listing() })
+  })
+}
+registerAssetRoutes('resource-packs', PACK_DIR, PACK_RE, 'resource-pack', listPacks)
+registerAssetRoutes('addons', ADDON_DIR, ADDON_RE, 'add-on', listAddons)
 
 app.listen(WEB_PORT, () => console.log(`Ghost Bridge website on http://0.0.0.0:${WEB_PORT}  (relay UDP port ${RELAY_PORT})`))
 process.on('SIGINT', async () => { await stopBridge(); process.exit(0) })
