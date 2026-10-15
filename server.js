@@ -108,7 +108,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     portal = null
     const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
     const nextPortal = new BedrockPortal({
-      ip: B.publicHost, port: PUBLIC_PORT, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
+      ip: B.host, port: B.port, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
       world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 1, maxMemberCount: 10 }
     })
     nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
@@ -121,7 +121,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
       return
     }
     B.portal = 'on'
-    addLog('Friends-list world "Ghost Proxy" is live (points at ' + B.publicHost + ':' + PUBLIC_PORT + ')')
+    addLog('Friends-list world is live and redirects directly to ' + B.host + ':' + B.port + ' (bypasses relay; compatible with hosts without public UDP)')
     if (pendingInviteGamertag && B.inviteStatus !== 'sent') {
       B.inviteStatus = 'sending'; B.inviteError = null
       try {
