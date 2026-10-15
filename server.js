@@ -11,13 +11,12 @@ const bedrock = require('bedrock-protocol')
 const { Authflow, Titles } = require('prismarine-auth')
 const { createGhost } = require('./ghost')
 
-const WEB_PORT = +process.env.PORT || 3000
-const RELAY_PORT = +process.env.RELAY_PORT || 19134
-const PUBLIC_PORT = +process.env.PUBLIC_PORT || RELAY_PORT // the port players use from outside (differs when you use a tunnel)
+const WEB_PORT = +process.env.PORT || +process.env.WEB_PORT || 3000
+const RELAY_PORT = +process.env.RELAY_PORT || +process.env.GAME_PORT || +process.env.SERVER_PORT || 19134
 const RELAY_PUBLIC_HOST = String(process.env.RELAY_PUBLIC_HOST || '').trim() || null
-const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || PUBLIC_PORT // public UDP endpoint forwarded to RELAY_PORT
-const DATA = path.join(__dirname, 'data')
-const SCHEM_DIR = path.join(__dirname, 'schematics')
+const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || +process.env.PUBLIC_PORT || RELAY_PORT // public UDP endpoint forwarded to RELAY_PORT
+const DATA = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'))
+const SCHEM_DIR = path.join(DATA, 'schematics')
 const PACK_DIR = path.join(DATA, 'resource-packs')
 const ADDON_DIR = path.join(DATA, 'addons')
 for (const d of [DATA, SCHEM_DIR, PACK_DIR, ADDON_DIR, path.join(DATA, 'profiles'), path.join(DATA, 'host-auth')]) fs.mkdirSync(d, { recursive: true })
@@ -110,10 +109,17 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     B.portalError = null
     try { if (portal) await portal.end() } catch {}
     portal = null
+    if (!RELAY_PUBLIC_HOST) {
+      B.portal = 'error'
+      B.portalError = 'RELAY_PUBLIC_HOST is required for schematic preview. Without a public UDP endpoint, the Friends portal would bypass Ghost Bridge and connect directly to the destination server.'
+      addLog(B.portalError)
+      return
+    }
     const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
-    // Only set RELAY_PUBLIC_HOST when a public UDP endpoint forwards to RELAY_PORT.
-    const redirectHost = RELAY_PUBLIC_HOST || B.host
-    const redirectPort = RELAY_PUBLIC_HOST ? RELAY_PUBLIC_PORT : B.port
+    // The portal must redirect to the public UDP endpoint that forwards to RELAY_PORT.
+    // Redirecting directly to the destination would bypass packet interception and preview.
+    const redirectHost = RELAY_PUBLIC_HOST
+    const redirectPort = RELAY_PUBLIC_PORT
     const redirectTarget = await dns.promises.lookup(redirectHost, { family: 4 })
     addLog('Resolved redirect target ' + redirectHost + ' to IPv4 ' + redirectTarget.address + ':' + redirectPort)
     const nextPortal = new BedrockPortal({
@@ -214,6 +220,7 @@ const auth = (req, res, next) => {
   const t = (req.headers.authorization || '').replace(/^Bearer /, '')
   return tokens.has(t) ? next() : res.status(401).json({ error: 'Not signed in.' })
 }
+app.get('/healthz', (_req, res) => res.status(200).json({ ok: true, service: 'ghost-bridge', uptimeSeconds: Math.floor(process.uptime()) }))
 app.use(express.static(path.join(__dirname, 'public')))
 
 const FILE_RE = /^[\w .()-]{1,80}\.(litematic|schem|schematic|nbt|mcstructure)$/i
@@ -248,7 +255,7 @@ app.post('/api/connect', auth, express.json(), async (req, res) => {
     addLog('Connect request failed: ' + e.message)
     return res.status(400).json({ error: e.message })
   }
-  if (B.status === 'error') return res.status(502).json({ error: B.error || B.portalError || 'The Bedrock portal failed to start.' })
+  if (B.status === 'error' || B.portal === 'error') return res.status(502).json({ error: B.error || B.portalError || 'The Bedrock portal failed to start.' })
   res.json({ ok: true, status: B.status, portal: B.portal, host: B.host, port: B.port })
 })
 app.post('/api/disconnect', auth, async (req, res) => { await stopBridge(); res.json({ ok: true }) })
