@@ -171,7 +171,7 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       let command = null;
       if (name === 'text' && typeof params.message === 'string') command = params.message;
       if (name === 'command_request' && typeof params.command === 'string') command = params.command;
-      if (command && /^\\/?\\.?build\\s+/i.test(command.trim())) {
+      if (command && /^\/?\.?build\s+/i.test(command.trim())) {
         if (destination) destination.canceled = true;
         runCommand(command).catch(err => tell('Ghost Bridge: ' + err.message));
       }
