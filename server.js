@@ -26,7 +26,7 @@ if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No
 
 // ---------- state shown on the website ----------
 const H = { status: 'signed_out', code: null, uri: null, gamertag: null, error: null } // Xbox host account
-const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
+const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
 const logs = []; const feed = []
 let playerCode = null
 const addLog = m => { logs.push({ t: Date.now(), m: String(m) }); if (logs.length > 200) logs.shift(); console.log('[bridge]', m) }
