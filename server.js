@@ -112,7 +112,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
       world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 0, maxMemberCount: 10 }
     })
     nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
-    nextPortal.use(Modules.AutoFriendAccept)
+    nextPortal.use(Modules.AutoFriendAccept, { inviteOnAdd: true })
     portal = nextPortal
     await nextPortal.start()
     if (B.status !== 'running') {
@@ -125,12 +125,20 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     if (pendingInviteGamertag && B.inviteStatus !== 'sent') {
       B.inviteStatus = 'sending'; B.inviteError = null
       try {
-        await nextPortal.invitePlayer(pendingInviteGamertag)
+        const profile = await nextPortal.host.rest.getProfile(pendingInviteGamertag)
+        try {
+          await nextPortal.host.rest.addXboxFriend(profile.xuid)
+          addLog('Added ' + pendingInviteGamertag + ' as an Xbox friend')
+        } catch (friendErr) {
+          // They may already be a friend. Still try to invite them.
+          addLog('Xbox friend-add response for ' + pendingInviteGamertag + ': ' + friendErr.message + ' (continuing to invite)')
+        }
+        await nextPortal.invitePlayer(profile.xuid)
         B.inviteStatus = 'sent'
         addLog('Game invite sent to ' + pendingInviteGamertag)
       } catch (inviteErr) {
         B.inviteStatus = 'error'; B.inviteError = inviteErr.message
-        addLog('Game invite failed for ' + pendingInviteGamertag + ': ' + inviteErr.message)
+        addLog('Could not add/invite ' + pendingInviteGamertag + ': ' + inviteErr.message)
       }
     }
   } catch (e) {
