@@ -4,8 +4,12 @@
   "private": true,
   "description": "Ghost Bridge: Bedrock relay with mobile schematic preview controls",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "bedrock-portal": "*",
     "bedrock-protocol": "*",
@@ -13,6 +17,7 @@
     "prismarine-auth": "*",
     "prismarine-nbt": "*",
     "prismarine-schematic": "*",
+    "vec3": "*",
     "express": "*"
   }
 }
