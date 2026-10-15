@@ -107,8 +107,10 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     try { if (portal) await portal.end() } catch {}
     portal = null
     const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
+    const redirectTarget = await dns.promises.lookup(B.host, { family: 4 })
+    addLog('Resolved redirect target ' + B.host + ' to IPv4 ' + redirectTarget.address)
     const nextPortal = new BedrockPortal({
-      ip: B.host, port: B.port, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
+      ip: redirectTarget.address, port: B.port, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
       world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 1, maxMemberCount: 10 }
     })
     nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
