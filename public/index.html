@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ghost Bridge</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#14161a;--sub:#5d6470;--line:#e2e5ea;--acc:#2f6fed;--accText:#fff;--ok:#1a9a54;--warn:#c98a00;--bad:#d03a3a;--chip:#eef1f6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--text:#eceef2;--sub:#98a0ad;--line:#272b33;--acc:#5b8cff;--accText:#0b1020;--ok:#3ed17c;--warn:#f0b429;--bad:#ff6b6b;--chip:#222732;color-scheme:dark}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:14px 14px 60px}
+h1{font-size:22px;margin:6px 0 2px}h2{font-size:16px;margin:0 0 8px}
+.sub{color:var(--sub);font-size:14px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px}
+button{padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--text);font-size:15px;font-weight:600}
+button.p{background:var(--acc);color:var(--accText);border-color:var(--acc)}
+button.d{color:var(--bad)}
+button:disabled{opacity:.45}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.grid button{padding:12px 6px;font-size:14px}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;background:var(--chip);font-size:13px;font-weight:600}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.code{font:700 26px/1.2 ui-monospace,Menlo,monospace;letter-spacing:3px;background:var(--chip);border-radius:10px;padding:10px 12px;display:inline-block;margin:6px 0}
+.feed,.log{font:13px/1.4 ui-monospace,Menlo,monospace;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-word}
+ol{padding-left:20px;margin:6px 0}li{margin:4px 0}
+.file{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);word-break:break-all}
+.file:first-of-type{border-top:0}
+.bar{height:8px;background:var(--chip);border-radius:99px;overflow:hidden;margin:8px 0}.bar>i{display:block;height:100%;background:var(--ok);width:0}
+.hide{display:none}
+a{color:var(--acc)}
+label.fp{display:block;text-align:center;padding:12px;border:1px dashed var(--line);border-radius:10px;color:var(--sub)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Ghost Bridge</h1>
+  <p class="sub">Join a Bedrock server from your console with schematic overlays.</p>
+
+  <section id="login" class="card hide">
+    <h2>Sign in</h2>
+    <p class="sub">Enter the admin password for this site.</p>
+    <input id="pw" type="password" placeholder="Password" autocomplete="current-password">
+    <p id="loginErr" class="bad" style="margin:8px 0 0"></p>
+    <div class="row" style="margin-top:10px"><button class="p" id="loginBtn">Sign in</button></div>
+  </section>
+
+  <div id="app" class="hide">
+    <section class="card">
+      <h2>1. Xbox host account <span id="hostChip" class="chip"></span></h2>
+      <p class="sub">A separate (alt) Xbox account whose &ldquo;world&rdquo; shows in your console's Friends list. Don't use your main account.</p>
+      <div id="hostBody"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Server <span id="bridgeChip" class="chip"></span></h2>
+      <div class="row">
+        <div style="flex:3;min-width:160px"><input id="ip" placeholder="Server IP (e.g. donutsmp.net)" autocapitalize="off" autocorrect="off" inputmode="url"></div>
+        <div style="flex:1;min-width:90px"><input id="port" placeholder="Port" inputmode="numeric" value="19132"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="p" id="startBtn">Start</button>
+        <button class="d" id="stopBtn">Stop</button>
+      </div>
+      <p id="bridgeMsg" class="sub" style="margin-top:10px"></p>
+    </section>
+
+    <section class="card">
+      <h2>3. Join on your console</h2>
+      <ol id="steps"></ol>
+      <div id="playerCode" class="hide">
+        <p class="sub" style="margin:8px 0 0">First join: you were shown a sign-in code. Go to <a id="pcLink" href="https://www.microsoft.com/link" target="_blank" rel="noopener">microsoft.com/link</a>, enter it, then join again.</p>
+        <div class="code" id="pcCode"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Controller <span id="playerChip" class="chip"></span></h2>
+      <p class="sub">Use your phone instead of typing in console chat. Walk around a little in-game first so the proxy knows where you are.</p>
+      <div class="row">
+        <div style="flex:1;min-width:150px"><select id="fileSel"></select></div>
+        <button class="p" id="previewBtn">Preview</button>
+      </div>
+      <div class="grid" id="btns"></div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div id="progress" class="sub"></div>
+      <div class="row" style="margin-top:6px"><div style="flex:1"><input id="cmd" placeholder="Other command (e.g. layer range 2 6)" autocapitalize="off" autocorrect="off"></div><button id="sendBtn">Send</button></div>
+      <div class="feed" id="feed" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Schematics</h2>
+      <p class="sub">.litematic, .schem, .schematic, .nbt, .mcstructure</p>
+      <label class="fp"><input id="up" type="file" class="hide" multiple>Tap to upload from your phone</label>
+      <div id="files" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Log</h2>
+      <div class="log" id="log"></div>
+      <div class="row" style="margin-top:10px"><button id="outBtn">Sign out</button></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id)
+let token = null; try { token = localStorage.getItem('gb_token') } catch {}
+let state = null; let timer = null
+
+function h (tag, props, ...kids) {
+  const e = document.createElement(tag)
+  for (const [k, v] of Object.entries(props || {})) { if (k === 'onclick') e.onclick = v; else if (k === 'class') e.className = v; else e.setAttribute(k, v) }
+  for (const k of kids) e.append(k && k.nodeType ? k : document.createTextNode(k == null ? '' : k))
+  return e
+}
+async function api (path, opts = {}) {
+  const r = await fetch('/api/' + path, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + token, ...(opts.json ? { 'Content-Type': 'application/json' } : {}) }, body: opts.json ? JSON.stringify(opts.json) : opts.body })
+  if (r.status === 401 && path !== 'login') { showLogin(); throw new Error('signed out') }
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(j.error || 'Request failed')
+  return j
+}
+function showLogin () { token = null; try { localStorage.removeItem('gb_token') } catch {}; $('login').classList.remove('hide'); $('app').classList.add('hide'); clearInterval(timer) }
+async function doLogin () {
+  $('loginErr').textContent = ''
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pw').value }) })
+    const j = await r.json(); if (!r.ok) throw new Error(j.error)
+    token = j.token; try { localStorage.setItem('gb_token', token) } catch {}
+    start()
+  } catch (e) { $('loginErr').textContent = e.message }
+}
+$('loginBtn').onclick = doLogin
+$('pw').onkeydown = e => { if (e.key === 'Enter') doLogin() }
+$('outBtn').onclick = showLogin
+
+function chip (el, text, cls) { el.textContent = text; el.className = 'chip ' + (cls || '') }
+
+function render (s) {
+  state = s
+  const H = s.host; const B = s.bridge
+  // host account
+  const hb = $('hostBody'); hb.replaceChildren()
+  if (H.status === 'ready') {
+    chip($('hostChip'), 'signed in', 'ok')
+    hb.append(h('p', { class: 'sub' }, H.gamertag ? 'Host gamertag: ' : 'Signed in.'), ...(H.gamertag ? [h('div', { class: 'code', style: 'font-size:20px;letter-spacing:1px' }, H.gamertag)] : []))
+  } else if (H.status === 'signing_in') {
+    chip($('hostChip'), 'waiting', 'warn')
+    hb.append(h('p', { class: 'sub' }, 'On any device, open the link and enter this code with the alt Xbox account:'),
+      h('a', { href: H.uri || 'https://www.microsoft.com/link', target: '_blank', rel: 'noopener' }, H.uri || 'microsoft.com/link'),
+      h('div'), h('div', { class: 'code' }, H.code || '...'))
+  } else {
+    chip($('hostChip'), H.status === 'error' ? 'error' : 'signed out', H.status === 'error' ? 'bad' : 'warn')
+    if (H.error) hb.append(h('p', { class: 'bad' }, H.error))
+    hb.append(h('button', { class: 'p', onclick: () => api('host/login', { method: 'POST' }).then(poll) }, 'Sign in host account'))
+  }
+  // bridge
+  const run = B.status === 'running' || B.status === 'starting'
+  chip($('bridgeChip'), B.status, B.status === 'running' ? 'ok' : B.status === 'error' ? 'bad' : '')
+  $('startBtn').disabled = B.status === 'starting'; $('stopBtn').disabled = !run
+  if (run && document.activeElement !== $('ip')) { $('ip').value = B.host || ''; $('port').value = B.port || 19132 }
+  $('bridgeMsg').textContent = B.error ? B.error : B.status === 'running' ? `Relay on UDP ${s.relayPort} to ${B.host}:${B.port} (Minecraft ${s.version})` : `Minecraft version ${s.version}`
+  // steps
+  const st = $('steps'); st.replaceChildren()
+  const addr = `${B.publicHost || '<server ip>'}:${B.publicPort || s.relayPort}`
+  st.append(h('li', {}, B.status === 'running' ? 'Server is connected.' : 'Start the server above.'))
+  if (B.portal === 'on') st.append(h('li', { class: 'ok' }, `Console (PlayStation, Xbox, Switch): add ${H.gamertag || 'the host account'} as a friend, then Play > Friends > "Ghost Proxy".`))
+  else if (B.portal === 'error') st.append(h('li', { class: 'bad' }, 'Friends-list world failed: ' + (B.portalError || 'unknown error')))
+  else st.append(h('li', { class: 'warn' }, 'Console Friends-list world is off. Sign in the host account (step 1), then press Start again.'))
+  st.append(h('li', {}, `Phone or Windows: Servers > Add Server > ${addr}`))
+  if (s.localIps && s.localIps.length) st.append(h('li', {}, `At home on the same Wi-Fi, no host account: open a LAN app like BedrockTogether on your phone and enter ${s.localIps[0]}:${s.relayPort}. The console sees it under Friends > LAN Games.`))
+  const pc = s.playerCode
+  $('playerCode').classList.toggle('hide', !pc)
+  if (pc) { $('pcCode').textContent = pc.code; $('pcLink').href = pc.uri || 'https://www.microsoft.com/link' }
+  // controller
+  const p = s.player
+  chip($('playerChip'), p ? (p.player || 'connected') : 'no player', p ? 'ok' : '')
+  const sel = $('fileSel'); const prev = sel.value
+  sel.replaceChildren(...s.files.map(f => h('option', { value: f.name }, f.name)))
+  if (prev) sel.value = prev
+  $('previewBtn').disabled = !p || !s.files.length
+  if (!$('btns').children.length) buildButtons()
+  for (const b of $('btns').children) b.disabled = !p
+  $('sendBtn').disabled = !p
+  if (p && p.file) {
+    const pct = p.blocks ? Math.round(100 * p.done / p.blocks) : 0
+    $('barFill').style.width = pct + '%'
+    $('progress').textContent = `${p.file}: ${p.done}/${p.blocks} correct (${pct}%), ${p.wrong} wrong. Layer ${p.layer}, ${p.mode === 'follow' ? 'following you' : 'locked'}.`
+  } else { $('barFill').style.width = '0'; $('progress').textContent = p ? (p.located ? 'Pick a file and tap Preview.' : 'Move a little in-game so the proxy knows where you are.') : '' }
+  const fd = $('feed'); const atEnd = fd.scrollTop + fd.clientHeight >= fd.scrollHeight - 8
+  fd.textContent = s.feed.map(f => f.m).join('\n') || 'Command replies show here and in-game.'
+  if (atEnd) fd.scrollTop = fd.scrollHeight
+  // files
+  const fl = $('files'); fl.replaceChildren()
+  if (!s.files.length) fl.append(h('p', { class: 'sub' }, 'No schematics yet.'))
+  for (const f of s.files) fl.append(h('div', { class: 'file' }, h('span', {}, `${f.name} (${(f.size / 1024).toFixed(0)} KB)`),
+    h('button', { class: 'd', onclick: () => { if (confirm('Delete ' + f.name + '?')) api('schematics/' + encodeURIComponent(f.name), { method: 'DELETE' }).then(poll) } }, 'Delete')))
+  // log
+  $('log').textContent = s.logs.map(l => new Date(l.t).toLocaleTimeString() + '  ' + l.m).join('\n')
+}
+
+const BUTTONS = [
+  ['Place', 'build place', 'p'], ['Cancel', 'build cancel'], ['Undo', 'undo'],
+  ['Rotate', 'rotate'], ['Mirror X', 'mirror x'], ['Mirror off', 'mirror off'],
+  ['Up', 'build up'], ['Down', 'build down'], ['Unlock', 'build unlock'],
+  ['Layer auto', 'layer auto', 'p'], ['Layer up', 'layer up'], ['Layer down', 'layer down'],
+  ['All layers', 'layer all'], ['Next blocks', 'next'], ['Progress', 'progress'],
+  ['Materials', 'mats'], ['Layers', 'layers'], ['Info', 'info'],
+  ['Glow', 'style glow'], ['Glass', 'style glass'], ['Solid', 'style solid']
+]
+function buildButtons () {
+  for (const [label, cmd, cls] of BUTTONS) $('btns').append(h('button', { class: cls || '', onclick: () => send(cmd) }, label))
+}
+async function send (text) { try { await api('command', { method: 'POST', json: { text } }); setTimeout(poll, 400) } catch (e) { alert(e.message) } }
+$('previewBtn').onclick = () => { if ($('fileSel').value) send('build start ' + $('fileSel').value) }
+$('sendBtn').onclick = () => { const v = $('cmd').value.trim(); if (v) { send(v); $('cmd').value = '' } }
+$('cmd').onkeydown = e => { if (e.key === 'Enter') $('sendBtn').click() }
+$('startBtn').onclick = async () => {
+  const host = $('ip').value.trim(); if (!host) return alert('Enter the server IP.')
+  try { await api('connect', { method: 'POST', json: { host, port: $('port').value.trim() || 19132 } }); poll() } catch (e) { alert(e.message) }
+}
+$('stopBtn').onclick = () => api('disconnect', { method: 'POST' }).then(poll)
+$('up').onchange = async e => {
+  for (const f of e.target.files) {
+    try { await api('schematics/' + encodeURIComponent(f.name), { method: 'PUT', body: f, headers: { 'Content-Type': 'application/octet-stream' } }) } catch (err) { alert(f.name + ': ' + err.message) }
+  }
+  e.target.value = ''; poll()
+}
+
+async function poll () { try { render(await api('state')) } catch {} }
+function start () { $('login').classList.add('hide'); $('app').classList.remove('hide'); poll(); clearInterval(timer); timer = setInterval(() => { if (!document.hidden) poll() }, 2000) }
+token ? start() : showLogin()
+</script>
+</body>
+</html>
