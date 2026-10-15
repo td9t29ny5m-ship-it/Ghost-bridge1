@@ -7,8 +7,7 @@
   "scripts": { "start": "node server.js" },
   "engines": { "node": ">=20" },
   "dependencies": {
-    "bedrock-portal": "2.7.0",
-    "bedrock-portal-nethernet": "2.7.0",
+    "bedrock-portal": "*",
     "bedrock-protocol": "*",
     "minecraft-data": "*",
     "prismarine-auth": "*",
