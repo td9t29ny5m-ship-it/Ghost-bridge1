@@ -11,7 +11,7 @@ const bedrock = require('bedrock-protocol')
 const { Authflow, Titles } = require('prismarine-auth')
 const { createGhost } = require('./ghost')
 
-const WEB_PORT = +process.env.PORT || +process.env.WEB_PORT || 3000
+const WEB_PORT = +process.env.PORT || +process.env.WEB_PORT || +process.env.SERVER_PORT || 3000
 const RELAY_PORT = +process.env.RELAY_PORT || +process.env.GAME_PORT || +process.env.SERVER_PORT || 19134
 const RELAY_PUBLIC_HOST = String(process.env.RELAY_PUBLIC_HOST || '').trim() || null
 const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || +process.env.PUBLIC_PORT || RELAY_PORT // public UDP endpoint forwarded to RELAY_PORT

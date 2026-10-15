@@ -6,7 +6,7 @@ Mobile-first dashboard for a Minecraft Bedrock relay and a Friends-session redir
 
 - Node.js 24 or newer (required by the current `bedrock-protocol` dependency).
 - Install dependencies with `npm install`; start with `npm start`.
-- The web dashboard listens on `PORT` (fallback `WEB_PORT`, then 3000).
+- The web dashboard listens on `PORT` (fallback `WEB_PORT`, then `SERVER_PORT`, then 3000). On a Pterodactyl-style host that assigns one public port, the web app and relay can use the same port number over TCP and UDP respectively, if the host exposes both protocols.
 - The Bedrock relay listens on UDP `RELAY_PORT` (fallback `GAME_PORT`, then `SERVER_PORT`, then 19134). The hosting provider must expose this UDP port publicly.
 - Set `RELAY_PUBLIC_HOST` to the public hostname/IP of a UDP endpoint that forwards to `RELAY_PORT`; set `RELAY_PUBLIC_PORT` (or `PUBLIC_PORT`) to its public UDP port. Without this endpoint, the Friends portal deliberately reports an error instead of silently bypassing the relay.
 - Set `ADMIN_PASSWORD` to a strong dashboard password.
