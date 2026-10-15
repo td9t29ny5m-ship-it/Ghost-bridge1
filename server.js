@@ -23,7 +23,7 @@ if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No
 
 // ---------- state shown on the website ----------
 const H = { status: 'signed_out', code: null, uri: null, gamertag: null, error: null } // Xbox host account
-const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: PUBLIC_PORT }
+const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
 const logs = []; const feed = []
 let playerCode = null
 const addLog = m => { logs.push({ t: Date.now(), m: String(m) }); if (logs.length > 200) logs.shift(); console.log('[bridge]', m) }
@@ -82,12 +82,14 @@ let ghost = null; let relay = null; let portal = null
 let portalRetryTimer = null
 let portalStartRunning = false
 let lastRequestHost = 'localhost'
+let pendingInviteGamertag = null
 async function stopBridge () {
   if (portalRetryTimer) { clearTimeout(portalRetryTimer); portalRetryTimer = null }
   try { if (portal) await portal.end() } catch {}
   try { if (relay) relay.close() } catch {}
   portal = null; relay = null; ghost = null; playerCode = null
-  Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null })
+  pendingInviteGamertag = null
+  Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null })
 }
 async function startPortal (req = { hostname: lastRequestHost }) {
   if (portalStartRunning || B.status !== 'running') return
@@ -120,6 +122,17 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     }
     B.portal = 'on'
     addLog('Friends-list world "Ghost Proxy" is live (points at ' + B.publicHost + ':' + PUBLIC_PORT + ')')
+    if (pendingInviteGamertag && B.inviteStatus !== 'sent') {
+      B.inviteStatus = 'sending'; B.inviteError = null
+      try {
+        await nextPortal.invitePlayer(pendingInviteGamertag)
+        B.inviteStatus = 'sent'
+        addLog('Game invite sent to ' + pendingInviteGamertag)
+      } catch (inviteErr) {
+        B.inviteStatus = 'error'; B.inviteError = inviteErr.message
+        addLog('Game invite failed for ' + pendingInviteGamertag + ': ' + inviteErr.message)
+      }
+    }
   } catch (e) {
     B.portal = 'error'
     B.portalError = e.message
@@ -136,11 +149,15 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     portalStartRunning = false
   }
 }
-async function startBridge (host, port, req) {
+async function startBridge (host, port, req, inviteGamertag = null) {
   await checkDest(host, port)
   lastRequestHost = (req && req.hostname) || lastRequestHost
   await stopBridge()
   B.status = 'starting'; B.host = host; B.port = port; B.error = null
+  pendingInviteGamertag = inviteGamertag || null
+  B.inviteGamertag = pendingInviteGamertag
+  B.inviteStatus = pendingInviteGamertag ? 'waiting_for_portal' : 'not_requested'
+  B.inviteError = null
   try {
     ghost = createGhost({ stateKey: `${host}:${port}`, schemDir: SCHEM_DIR, stateFile: path.join(DATA, 'state.json'), onSay: addFeed, log: addLog })
     relay = new bedrock.Relay({
@@ -196,7 +213,9 @@ app.post('/api/connect', auth, express.json(), async (req, res) => {
   const host = String((req.body && req.body.host) || '').trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
   const port = parseInt((req.body && req.body.port) || 19132, 10)
   try { await checkDest(host, port) } catch (e) { return res.status(400).json({ error: e.message }) }
-  startBridge(host, port, req) // runs in the background; the page polls /api/state
+  const inviteGamertag = String((req.body && req.body.inviteGamertag) || '').trim()
+  if (inviteGamertag.length > 64 || /[\u0000-\u001f]/.test(inviteGamertag)) return res.status(400).json({ error: 'Enter a valid Xbox gamertag.' })
+  startBridge(host, port, req, inviteGamertag || null) // invite is sent after the portal comes online
   res.json({ ok: true })
 })
 app.post('/api/disconnect', auth, async (req, res) => { await stopBridge(); res.json({ ok: true }) })
