@@ -5,16 +5,36 @@ on:
   pull_request:
     branches: [main]
 jobs:
-  syntax:
+  smoke-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install runtime dependencies
+        run: npm install --no-audit --no-fund
       - name: Check JavaScript syntax
         run: |
           node --check server.js
           node --check ghost.js
       - name: Validate package metadata
         run: node -e "const p = require('./package.json'); if (!p.scripts || !p.scripts.start) process.exit(1); console.log(p.name, p.version)"
+      - name: Smoke-test HTTP dashboard
+        env:
+          ADMIN_PASSWORD: ci-test-password
+          PORT: 3100
+          DATA_DIR: /tmp/ghost-bridge-ci-data
+        run: |
+          node server.js > /tmp/ghost-bridge.log 2>&1 &
+          echo $! > /tmp/ghost-bridge.pid
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3100/healthz; then
+              kill $(cat /tmp/ghost-bridge.pid)
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/ghost-bridge.log
+          kill $(cat /tmp/ghost-bridge.pid) || true
+          exit 1
