@@ -109,7 +109,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
     const nextPortal = new BedrockPortal({
       ip: B.publicHost, port: PUBLIC_PORT, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
-      world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 0, maxMemberCount: 10 }
+      world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 1, maxMemberCount: 10 }
     })
     nextPortal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
     nextPortal.use(Modules.AutoFriendAccept, { inviteOnAdd: true })
