@@ -117,6 +117,7 @@ async function startBridge (host, port, req) {
       world: { hostName: 'Ghost Proxy', name: host, version: ghost.version, memberCount: 0, maxMemberCount: 10 }
     })
     portal.use(Modules.AutoFriendAdd, { inviteOnAdd: true })
+    portal.use(Modules.AutoFriendAccept)
     await portal.start()
     B.portal = 'on'; addLog(`Friends-list world "Ghost Proxy" is live (points at ${B.publicHost}:${PUBLIC_PORT})`)
   } catch (e) { B.portal = 'error'; B.portalError = e.message; addLog('Friends-list session failed: ' + e.message) }
