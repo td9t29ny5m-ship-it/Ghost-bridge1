@@ -235,8 +235,14 @@ app.post('/api/connect', auth, express.json(), async (req, res) => {
   try { await checkDest(host, port) } catch (e) { return res.status(400).json({ error: e.message }) }
   const inviteGamertag = String((req.body && req.body.inviteGamertag) || '').trim()
   if (inviteGamertag.length > 64 || /[\u0000-\u001f]/.test(inviteGamertag)) return res.status(400).json({ error: 'Enter a valid Xbox gamertag.' })
-  startBridge(host, port, req, inviteGamertag || null) // invite is sent after the portal comes online
-  res.json({ ok: true })
+  try {
+    await startBridge(host, port, req, inviteGamertag || null) // Wait for startup checks before reporting success.
+  } catch (e) {
+    addLog('Connect request failed: ' + e.message)
+    return res.status(400).json({ error: e.message })
+  }
+  if (B.status === 'error') return res.status(502).json({ error: B.error || B.portalError || 'The Bedrock portal failed to start.' })
+  res.json({ ok: true, status: B.status, portal: B.portal, host: B.host, port: B.port })
 })
 app.post('/api/disconnect', auth, async (req, res) => { await stopBridge(); res.json({ ok: true }) })
 app.post('/api/command', auth, express.json(), async (req, res) => {
