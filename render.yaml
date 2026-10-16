@@ -9,4 +9,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: MC_BEDROCK_VERSION
-        value: 1.26.51
+        value: 1.21.90
