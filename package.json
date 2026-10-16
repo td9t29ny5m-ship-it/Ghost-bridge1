@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Ghost Bridge: Bedrock relay with mobile schematic preview controls",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "prestart": "npm install --omit=dev",
-    "start": "node server.js"
+    "start": "node index.js"
   },
   "engines": {
     "node": ">=24"
