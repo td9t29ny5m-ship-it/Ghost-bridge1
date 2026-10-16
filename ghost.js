@@ -120,7 +120,7 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
 
   async function runCommand(raw) {
     const text = String(raw || '').trim();
-    const match = text.match(/^\/?\.?build\s+(start|move|place|stop|status)(?:\s+(.*))?$/i);
+    const match = text.match(/^[\/!.]?build\s+(start|move|place|stop|status)(?:\s+(.*))?$/i);
     if (!match) throw new Error('Use /.build start <filename>, /.build move <x> <y> <z>, /.build place, /.build stop, or /.build status.');
     const action = match[1].toLowerCase();
     const args = (match[2] || '').trim();
@@ -201,23 +201,29 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       let command = null;
       if (name === 'text' && typeof params.message === 'string') command = params.message;
       if (name === 'command_request' && typeof params.command === 'string') command = params.command;
-      if (command && /^\/?\.?build\s+/i.test(command.trim())) {
+      if (command && /^[\/!.]?build\s+/i.test(command.trim())) {
         if (destination) destination.canceled = true;
+        log('In-game build command intercepted: ' + command.trim().slice(0, 120));
         runCommand(command).catch(err => tell('Ghost Bridge: ' + err.message));
       }
+
     });
-    log('Ghost in-game commands enabled after the relay join event; initial resource-pack packets were not intercepted.');
+    log('Ghost build command listener attached on connect; use /build, .build, or !build. Other packets continue through the relay.');
   }
 
   return {
     version: DEFAULT_VERSION,
     attach(r) {
       relay = r;
-      relay.on('connect', attachPlayer);
-      relay.on('join', () => {
-        // Resource-pack negotiation happens before join. Do not register a generic
-        // serverbound packet handler until the destination has completed login.
-        // This lets the relay forward pack responses/chunk requests untouched.
+        relay.on('connect', player => {
+        attachPlayer(player);
+        // Register only a narrow listener immediately. It ignores all packets except
+        // Ghost build commands, so login/resource-pack packets continue untouched.
+        attachCommandHandlers(player);
+      });
+      relay.on('join', player => {
+        // Keep the current player reference aligned with the session that joined.
+        if (player) activePlayer = player;
         if (activePlayer) attachCommandHandlers(activePlayer);
       });
       log('Ghost preview engine attached. Resource-pack handshake is left untouched; in-game build commands activate after join.');
