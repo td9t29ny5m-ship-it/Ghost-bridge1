@@ -69,7 +69,15 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
       </section>
 
       <section class="card full">
-        <div class="section-head"><div class="headleft"><div class="stepnum">05</div><div><h2>Connection diagnostics</h2><p class="muted small">Plain-English status and recent events.</p></div></div><button id="refreshBtn" class="btn ghost">Refresh</button></div>
+        <div class="section-head"><div class="headleft"><div class="stepnum">05</div><div><h2>Built-in commands</h2><p class="muted small">Send Ghost Bridge build commands from this dashboard.</p></div></div></div>
+        <label class="field"><span>COMMAND</span><input id="cmdInput" placeholder="/build start myhome" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+        <div class="actions"><button id="cmdSend" class="btn primary">Run command</button><button id="cmdStatusBtn" class="btn ghost">Check preview status</button></div>
+        <p class="muted small">Examples: /build start myhome, /build move 100 65 100, /build place, /build stop, /build status. Use a .schem or .schematic file name that you uploaded.</p>
+        <p id="cmdStatus" class="note">Commands require an active player session through the Ghost Bridge relay.</p>
+      </section>
+
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">06</div><div><h2>Connection diagnostics</h2><p class="muted small">Plain-English status and recent events.</p></div></div><button id="refreshBtn" class="btn ghost">Refresh</button></div>
         <div id="diagnostic" class="note">Waiting for the first status checkÃ¢ÂÂ¦</div>
          <div class="note notice">WISPBYTE NETWORK CHECK: The dashboard uses HTTP/TCP. PS5 joining also requires a publicly reachable UDP port. A working website alone does not prove the relay is reachable. Configure RELAY_PUBLIC_HOST and RELAY_PUBLIC_PORT only if Wispbyte provides public UDP forwarding.</div>
         <div id="log" class="log" style="margin-top:12px">No events yet.</div>
@@ -78,8 +86,8 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
 
       <section class="card full">
         <div class="section-head"><div class="headleft"><div class="stepnum">+</div><div><h2>Extra tools</h2><p class="muted small">Files and schematic experiments</p></div></div></div>
-        <p class="muted small">Schematic preview is experimental. The current preview engine supports Sponge .schem and legacy .schematic files. The in-game build command can show and reposition a client-side preview; it does not place real blocks on the server.</p>
-        <label class="upload" style="margin-top:12px">Tap to upload schematic files<input id="up" type="file" multiple accept=".litematic,.schem,.schematic,.nbt,.mcstructure"></label>
+        <p class="muted small">The preview engine currently supports Sponge .schem and legacy .schematic files only. Preview blocks are client-side and do not place real blocks on the server.</p>
+        <label class="upload" style="margin-top:12px">Tap to upload schematic files<input id="up" type="file" multiple accept=".schem,.schematic"></label>
         <div id="files" style="margin-top:8px"></div>
         <div class="note">RESOURCE PACKS</div>
         <label class="upload" style="margin-top:10px">Tap to upload resource packs (.mcpack or .zip)<input id="packUp" type="file" multiple accept=".mcpack,.zip"></label>
@@ -194,6 +202,8 @@ async function connect(){
 $('startBtn').onclick=connect;$('reconnectBtn').onclick=async()=>{try{await api('disconnect',{method:'POST'});await connect()}catch(e){$('connectErr').textContent=e.message}};
 $('stopBtn').onclick=async()=>{try{await api('disconnect',{method:'POST'});await poll()}catch(e){$('connectErr').textContent=e.message}};
 $('refreshBtn').onclick=poll;
+async function sendCommand(command){const value=(command===undefined?$('cmdInput').value:command).trim();if(!value){$('cmdStatus').textContent='Enter a command first.';return}try{$('cmdSend').disabled=true;$('cmdStatus').textContent='Sending command…';const result=await api('command',{method:'POST',json:{text:value}});$('cmdStatus').textContent='Command sent successfully.';if(command===undefined)$('cmdInput').value='';await poll()}catch(e){$('cmdStatus').textContent='Command failed: '+e.message}finally{$('cmdSend').disabled=false}}
+$('cmdSend').onclick=()=>sendCommand();$('cmdInput').onkeydown=e=>{if(e.key==='Enter')sendCommand()};$('cmdStatusBtn').onclick=()=>sendCommand('/build status');
 $('copyAddr').onclick=async()=>{const t=$('publicAddr').textContent;if(t.includes('appears after'))return;try{await navigator.clipboard.writeText(t);$('copyAddr').textContent='Copied!';setTimeout(()=>$('copyAddr').textContent='Copy address',1500)}catch{$('connectErr').textContent='Copy was blocked by the browser. Select the address and copy it manually.'}};
 $('copyDiag').onclick=async()=>{const t='Ghost Bridge diagnostics\nHost: '+(state&&state.host?state.host.status:'unknown')+'\nBridge: '+(state&&state.bridge?state.bridge.status:'unknown')+'\nPortal: '+(state&&state.bridge?state.bridge.portal:'unknown')+'\nDestination: '+$('ip').value+':'+$('port').value+'\n\n'+$('diagnostic').textContent+'\n\n'+$('log').textContent;try{await navigator.clipboard.writeText(t);$('copyDiag').textContent='Copied!';setTimeout(()=>$('copyDiag').textContent='Copy diagnostics',1500)}catch{$('diagnostic').textContent=t}};
 $('up').onchange=async e=>{for(const f of e.target.files){try{await api('schematics/'+encodeURIComponent(f.name),{method:'PUT',body:f,headers:{'Content-Type':'application/octet-stream'}})}catch(err){alert(f.name+': '+err.message)}}e.target.value='';poll()};

@@ -7,7 +7,7 @@ const prismarineBlock = require('prismarine-block');
 const { Schematic } = require('prismarine-schematic');
 const { Vec3 } = require('vec3');
 
-const DEFAULT_VERSION = process.env.MC_BEDROCK_VERSION || '1.26.51';
+const DEFAULT_VERSION = process.env.MC_BEDROCK_VERSION || '1.21.90';
 const MAX_PREVIEW_BLOCKS = 2500;
 const UPDATE_FLAGS = 2; // BlockUpdateNetwork
 
