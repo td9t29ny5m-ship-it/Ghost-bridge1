@@ -5,6 +5,7 @@
   "description": "Ghost Bridge: Bedrock relay with mobile schematic preview controls",
   "main": "server.js",
   "scripts": {
+    "prestart": "npm install --omit=dev",
     "start": "node server.js"
   },
   "engines": {
