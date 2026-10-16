@@ -11,7 +11,7 @@ const bedrock = require('bedrock-protocol')
 const { Authflow, Titles } = require('prismarine-auth')
 const { createGhost } = require('./ghost')
 
-const WEB_PORT = +process.env.PORT || +process.env.WEB_PORT || +process.env.SERVER_PORT || 3000
+const WEB_PORT = Number(process.env.SERVER_PORT || process.env.PORT || process.env.WEB_PORT || 12019)
 const RELAY_PORT = +process.env.RELAY_PORT || +process.env.GAME_PORT || +process.env.SERVER_PORT || 19134
 const RELAY_PUBLIC_HOST = String(process.env.RELAY_PUBLIC_HOST || '').trim() || null
 const RELAY_PUBLIC_PORT = +process.env.RELAY_PUBLIC_PORT || +process.env.PUBLIC_PORT || RELAY_PORT // public UDP endpoint forwarded to RELAY_PORT
@@ -294,5 +294,17 @@ function registerAssetRoutes(route, dir, re, label, listing) {
 registerAssetRoutes('resource-packs', PACK_DIR, PACK_RE, 'resource-pack', listPacks)
 registerAssetRoutes('addons', ADDON_DIR, ADDON_RE, 'add-on', listAddons)
 
-app.listen(WEB_PORT, () => console.log(`Ghost Bridge website on http://0.0.0.0:${WEB_PORT}  (relay UDP port ${RELAY_PORT})`))
+const webServer = app.listen(WEB_PORT, '0.0.0.0', () => {
+  console.log(`[wispbyte] Ghost Bridge HTTP listening on 0.0.0.0:${WEB_PORT}`)
+  console.log(`[wispbyte] Bedrock relay UDP bind port: ${RELAY_PORT}`)
+  console.log(`[wispbyte] Public UDP relay: ${RELAY_PUBLIC_HOST ? RELAY_PUBLIC_HOST + ':' + RELAY_PUBLIC_PORT : 'NOT CONFIGURED (web dashboard can work, console relay may not)'}`)
+})
+webServer.on('error', err => {
+  console.error(`[wispbyte] HTTP listener failed on port ${WEB_PORT}: ${err.message}`)
+  process.exitCode = 1
+})
+process.on('SIGTERM', async () => {
+  try { await stopBridge() } catch (e) { console.error('[wispbyte] Shutdown error:', e.message) }
+  webServer.close(() => process.exit(0))
+})
 process.on('SIGINT', async () => { await stopBridge(); process.exit(0) })
