@@ -20,3 +20,6 @@ Mobile-first dashboard for a Minecraft Bedrock relay and a Friends-session redir
 - `/.build place` only locks the preview position; it does not place real blocks on the server.
 - A successful HTTP deployment is not proof of UDP reachability, Xbox Friends-session compatibility, or correct Bedrock block runtime IDs. Test those separately before calling the project production-ready.
 - Use a separate Xbox/Microsoft account for the portal. This project is not affiliated with Microsoft or Mojang.
+## Wispbyte deployment
+
+See [WISPBYTE.md](WISPBYTE.md) for the Wispbyte startup settings and the important difference between the website port (TCP) and the Minecraft relay port (UDP). The HTTP server binds explicitly to `0.0.0.0` and prioritizes Wispbyte's assigned `SERVER_PORT`.
