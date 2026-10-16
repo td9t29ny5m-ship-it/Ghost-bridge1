@@ -35,15 +35,15 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
     <div class="grid">
       <section class="card">
         <div class="section-head"><div class="headleft"><div class="stepnum">01</div><div><h2>Xbox host account</h2><p class="muted small">Your alt account</p></div></div><span id="hostChip" class="badge">Checking</span></div>
-        <div id="hostBody"><p class="muted small">Checking sign-in statusâ¦</p></div>
+        <div id="hostBody"><p class="muted small">Checking sign-in statusÃ¢ÂÂ¦</p></div>
         <div class="note">The host session only becomes joinable when the portal is running. Signed in does not automatically mean online.</div>
       </section>
 
       <section class="card">
         <div class="section-head"><div class="headleft"><div class="stepnum">02</div><div><h2>Bridge status</h2><p class="muted small">Connection health</p></div></div><span id="bridgeChip" class="badge">Checking</span></div>
-        <div class="statusline"><div class="statusicon">â</div><div class="statuscopy"><strong>Destination relay</strong><span id="relayStatus">Waiting for statusâ¦</span></div></div>
-        <div class="statusline"><div class="statusicon">â</div><div class="statuscopy"><strong>Console Friends session</strong><span id="portalStatus">Waiting for statusâ¦</span></div></div>
-        <div class="statusline"><div class="statusicon">â</div><div class="statuscopy"><strong>Build version</strong><span id="version">Checkingâ¦</span></div></div>
+        <div class="statusline"><div class="statusicon">Ã¢ÂÂ</div><div class="statuscopy"><strong>Destination relay</strong><span id="relayStatus">Waiting for statusÃ¢ÂÂ¦</span></div></div>
+        <div class="statusline"><div class="statusicon">Ã¢ÂÂ</div><div class="statuscopy"><strong>Console Friends session</strong><span id="portalStatus">Waiting for statusÃ¢ÂÂ¦</span></div></div>
+        <div class="statusline"><div class="statusicon">Ã¢ÂÂ</div><div class="statuscopy"><strong>Build version</strong><span id="version">CheckingÃ¢ÂÂ¦</span></div></div>
       </section>
 
       <section class="card full">
@@ -63,21 +63,22 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <div class="section-head"><div class="headleft"><div class="stepnum">04</div><div><h2>Join from your PS5</h2><p class="muted small">Follow these steps in order.</p></div></div><button id="copyAddr" class="btn ghost">Copy address</button></div>
         <div id="publicAddr" class="addr">Start the bridge to generate your connection address.</div>
         <ol id="steps" class="joinsteps" style="margin-top:12px">
-          <li>Sign in the alt Xbox host account.</li><li>Enter your server and tap Start bridge.</li><li>Open Minecraft on your console and go to Play â Friends.</li>
+          <li>Sign in the alt Xbox host account.</li><li>Enter your server and tap Start bridge.</li><li>Open Minecraft on your console and go to Play Ã¢ÂÂ Friends.</li>
         </ol>
         <div class="note notice">Friend requests can only be processed while the host's portal session is running. If the host is offline, start the bridge first, then send the request again.</div>
       </section>
 
       <section class="card full">
         <div class="section-head"><div class="headleft"><div class="stepnum">05</div><div><h2>Connection diagnostics</h2><p class="muted small">Plain-English status and recent events.</p></div></div><button id="refreshBtn" class="btn ghost">Refresh</button></div>
-        <div id="diagnostic" class="note">Waiting for the first status checkâ¦</div>
+        <div id="diagnostic" class="note">Waiting for the first status checkÃ¢ÂÂ¦</div>
+         <div class="note notice">WISPBYTE NETWORK CHECK: The dashboard uses HTTP/TCP. PS5 joining also requires a publicly reachable UDP port. A working website alone does not prove the relay is reachable. Configure RELAY_PUBLIC_HOST and RELAY_PUBLIC_PORT only if Wispbyte provides public UDP forwarding.</div>
         <div id="log" class="log" style="margin-top:12px">No events yet.</div>
         <div class="actions"><button id="copyDiag" class="btn">Copy diagnostics</button><button id="outBtn" class="btn ghost">Sign out</button></div>
       </section>
 
       <section class="card full">
         <div class="section-head"><div class="headleft"><div class="stepnum">+</div><div><h2>Extra tools</h2><p class="muted small">Files and schematic experiments</p></div></div></div>
-        <p class="muted small">Schematic uploads can be stored here, but automated building, layer controls, and in-game command forwarding are not implemented in the current Ghost Bridge engine. These controls are intentionally not shown as working features.</p>
+        <p class="muted small">Schematic preview is experimental. The current preview engine supports Sponge .schem and legacy .schematic files. The in-game build command can show and reposition a client-side preview; it does not place real blocks on the server.</p>
         <label class="upload" style="margin-top:12px">Tap to upload schematic files<input id="up" type="file" multiple accept=".litematic,.schem,.schematic,.nbt,.mcstructure"></label>
         <div id="files" style="margin-top:8px"></div>
         <div class="note">RESOURCE PACKS</div>
@@ -86,11 +87,11 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <div class="note">ADD-ONS</div>
         <label class="upload" style="margin-top:10px">Tap to upload add-ons (.mcaddon, .mcpack or .zip)<input id="addonUp" type="file" multiple accept=".mcaddon,.mcpack,.zip"></label>
         <div id="addons" style="margin-top:8px"></div>
-        <p class="note notice">Uploads are stored on this website only. They do not automatically import packs into Minecraft on PS5 or attach them to a world. Render free storage may reset when the service restarts or redeploys.</p>
+        <p class="note notice">Uploads are stored on this website only. They do not automatically import packs into Minecraft on PS5 or attach them to a world. Wispbyte storage may reset after a restart or reinstall, depending on the server setup. Keep your original files backed up.</p>
       </section>
     </div>
   </div>
-  <footer class="footer">Ghost Bridge Â· Keep your host account separate from your main account.</footer>
+  <footer class="footer">Ghost Bridge ÃÂ· Keep your host account separate from your main account.</footer>
 </main>
 <script>
 const $=id=>document.getElementById(id);
@@ -131,16 +132,16 @@ function render(s){
   const b=node('button','btn primary block','Sign in host account');b.style.marginTop='10px';b.onclick=async()=>{try{await api('host/login',{method:'POST'});await poll()}catch(e){$('connectErr').textContent=e.message}};hb.append(b);
  }
  badge($('bridgeChip'),B.status||'unknown',running?'good':B.status==='error'?'bad':starting?'warn':'');
- $('relayStatus').textContent=running?'Listening on UDP '+(s.relayPort||'unknown')+' â '+(B.host||'?')+':'+(B.port||'?'):B.status==='error'?(B.error||'Relay failed'):starting?'Opening the relayâ¦':'Not running';
+ $('relayStatus').textContent=running?'Listening on UDP '+(s.relayPort||'unknown')+' Ã¢ÂÂ '+(B.host||'?')+':'+(B.port||'?'):B.status==='error'?(B.error||'Relay failed'):starting?'Opening the relayÃ¢ÂÂ¦':'Not running';
  $('portalStatus').textContent=B.portal==='on'?'Online as a joinable Friends session':B.portal==='error'?'Failed: '+(B.portalError||'unknown error'):'Offline. Start the bridge after host sign-in.';
  $('version').textContent='Minecraft Bedrock '+(s.version||'unknown');
  $('startBtn').disabled=starting;$('stopBtn').disabled=!(running||starting);$('reconnectBtn').disabled=starting;
  if(document.activeElement!==$('ip')&&B.host)$('ip').value=B.host;
  if(document.activeElement!==$('port')&&B.port)$('port').value=B.port;
- $('bridgeMsg').textContent=B.error?'Connection error: '+B.error:running?'Bridge is running. Keep this service awake and use the console steps below.':starting?'Starting the relay and Friends sessionâ¦':'Ready when you are. The host session starts with the bridge.';
+ $('bridgeMsg').textContent=B.error?'Connection error: '+B.error:running?'Bridge is running. Keep this service awake and use the console steps below.':starting?'Starting the relay and Friends sessionÃ¢ÂÂ¦':'Ready when you are. The host session starts with the bridge.';
  const inviteMsg=$('inviteMsg');
- if(B.inviteStatus==='sent')inviteMsg.textContent='Invite sent to '+B.inviteGamertag+'. Check Minecraft notifications on your console, or join Ghost Proxy from Play → Friends.';
- else if(B.inviteStatus==='sending')inviteMsg.textContent='Bridge is online. Sending a game invite to '+B.inviteGamertag+'…';
+ if(B.inviteStatus==='sent')inviteMsg.textContent='Invite sent to '+B.inviteGamertag+'. Check Minecraft notifications on your console, or join Ghost Proxy from Play â Friends.';
+ else if(B.inviteStatus==='sending')inviteMsg.textContent='Bridge is online. Sending a game invite to '+B.inviteGamertag+'â¦';
  else if(B.inviteStatus==='waiting_for_portal')inviteMsg.textContent='Bridge is starting. The invite will be sent automatically when the Friends session is online.';
  else if(B.inviteStatus==='error')inviteMsg.textContent='The bridge is online, but the invite failed: '+(B.inviteError||'unknown error')+'. Check the gamertag and diagnostics.';
  else inviteMsg.textContent='Enter the Xbox gamertag you use on PS5. After the Friends session comes online, Ghost Bridge will send you a game invite.';
@@ -151,7 +152,7 @@ function render(s){
  const lines=[
   'Make sure the alt Xbox account is signed in: '+(H.gamertag||'host account')+'.',
   running?'Bridge is running and targeting '+(B.host||'your server')+':'+(B.port||19132)+'.':'Enter the destination above and tap Start bridge.',
-  'On PS5, open Minecraft â Play â Friends and look for âGhost Proxyâ.',
+  'On PS5, open Minecraft Ã¢ÂÂ Play Ã¢ÂÂ Friends and look for Ã¢ÂÂGhost ProxyÃ¢ÂÂ.',
   B.portal==='on'?'If needed, add '+(H.gamertag||'the host gamertag')+' as a friend. Requests can only be accepted while the portal is online.': 'If the Friends session does not appear, check that the host is signed in and the portal status says Online.',
   'Join the Ghost Proxy session. It should redirect you to the destination selected above.'
  ];
@@ -171,12 +172,12 @@ function render(s){
 function renderFiles(files){
  const el=$('files');el.replaceChildren();
  if(!files.length){el.append(node('p','muted small','No uploaded files.'));return}
- files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' Â· '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api('schematics/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
+ files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' ÃÂ· '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api('schematics/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
 }
 function renderAssetFiles(id,files,route){
  const el=$(id);el.replaceChildren();
  if(!files.length){el.append(node('p','muted small','No files uploaded.'));return}
- files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' · '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api(route+'/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
+ files.forEach(f=>{const row=node('div','file');row.append(node('span','small',f.name+' Â· '+Math.max(1,Math.round(f.size/1024))+' KB'));const b=node('button','btn danger','Delete');b.onclick=async()=>{if(!confirm('Delete '+f.name+'?'))return;try{await api(route+'/'+encodeURIComponent(f.name),{method:'DELETE'});await poll()}catch(e){alert(e.message)}};row.append(b);el.append(row)});
 }
 async function uploadAssets(inputId,route){const input=$(inputId);for(const f of input.files){try{await api(route+'/'+encodeURIComponent(f.name),{method:'PUT',body:f,headers:{'Content-Type':'application/octet-stream'}})}catch(err){alert(f.name+': '+err.message)}}input.value='';await poll()}
 $('packUp').onchange=()=>uploadAssets('packUp','resource-packs');
