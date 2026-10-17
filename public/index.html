@@ -233,7 +233,7 @@ $('cmdSend').onclick=()=>sendCommand();$('cmdInput').onkeydown=e=>{if(e.key==='E
 $('copyAddr').onclick=async()=>{const t=$('publicAddr').textContent;if(t.includes('appears after'))return;try{await navigator.clipboard.writeText(t);$('copyAddr').textContent='Copied!';setTimeout(()=>$('copyAddr').textContent='Copy address',1500)}catch{$('connectErr').textContent='Copy was blocked by the browser. Select the address and copy it manually.'}};
 $('copyDiag').onclick=async()=>{const t='Ghost Bridge diagnostics\nHost: '+(state&&state.host?state.host.status:'unknown')+'\nBridge: '+(state&&state.bridge?state.bridge.status:'unknown')+'\nPortal: '+(state&&state.bridge?state.bridge.portal:'unknown')+'\nDestination: '+$('ip').value+':'+$('port').value+'\n\n'+$('diagnostic').textContent+'\n\n'+$('log').textContent;try{await navigator.clipboard.writeText(t);$('copyDiag').textContent='Copied!';setTimeout(()=>$('copyDiag').textContent='Copy diagnostics',1500)}catch{$('diagnostic').textContent=t}};
 $('up').onchange=async e=>{for(const f of e.target.files){try{await api('schematics/'+encodeURIComponent(f.name),{method:'PUT',body:f,headers:{'Content-Type':'application/octet-stream'}})}catch(err){alert(f.name+': '+err.message)}}e.target.value='';poll()};
-let schematicMeta=null, schematicLayer=null, schematicLoadedName='', schematicRequestId=0, schematicCompleted={};
+let schematicMeta=null, schematicLayer=null, schematicLoadedName=null, schematicRequestId=0, schematicCompleted={};
 try{schematicCompleted=JSON.parse(localStorage.getItem('gb_schem_done')||'{}')||{}}catch{schematicCompleted={}}
 function drawSchematicCanvas(){
  const canvas=$('schemCanvas'),rect=canvas.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);
@@ -275,7 +275,7 @@ async function loadSchematic(name){
  $('schemDimensions').textContent='Reading schematic…';$('schemSummary').textContent='Checking dimensions and block palette.';drawSchematicCanvas();
  try{const meta=await api('schematics/'+encodeURIComponent(name)+'/preview');if(requestId!==schematicRequestId)return;schematicMeta=meta;
   $('schemDimensions').textContent=meta.dimensions.x+' × '+meta.dimensions.y+' × '+meta.dimensions.z+' blocks';
-  $('schemSummary').textContent=meta.blockCount+' non-air blocks · '+meta.palette.length+' common block types shown';
+  $('schemSummary').textContent=meta.blockCount+' non-air blocks · up to '+meta.palette.length+' common block types detected';
   $('layerRange').max=String(meta.dimensions.y-1);$('layerRange').value='0';$('layerRange').disabled=meta.dimensions.y<=1;
   $('layerPrev').disabled=true;$('layerNext').disabled=meta.dimensions.y<=1;$('layerDone').disabled=false;
   await loadSchematicLayer(0,requestId);
