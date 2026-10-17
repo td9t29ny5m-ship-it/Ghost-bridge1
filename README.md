@@ -23,3 +23,17 @@ Mobile-first dashboard for a Minecraft Bedrock relay and a Friends-session redir
 ## Wispbyte deployment
 
 See [WISPBYTE.md](WISPBYTE.md) for the Wispbyte startup settings and the important difference between the website port (TCP) and the Minecraft relay port (UDP). The HTTP server binds explicitly to `0.0.0.0` and prioritizes Wispbyte's assigned `SERVER_PORT`.
+
+
+## Schematic workbench
+
+The dashboard includes an experimental browser-based schematic builder for `.schem` and legacy `.schematic` files:
+
+- Interactive 3D model with orbit, pan, zoom, fit-to-model, and top/front/side camera presets.
+- Full-build, current-layer, layers-up-to-current, and faded-lower-layer viewing modes.
+- Procedural pixel-style block textures, a ground grid, and clickable block inspection with schematic-relative X/Y/Z coordinates.
+- A 2D top-down layer blueprint, layer slider, previous/next controls, next unfinished layer, and per-layer completion tracking saved in the current browser.
+- Full-build block counts, searchable material inventory, copyable material list, and CSV export.
+- Mobile-friendly viewport and fullscreen where the browser supports it.
+
+The 3D scene endpoint caps preview payloads at 30,000 solid blocks, and schematic dimensions are limited to 512 blocks per axis and 100,000 total volume to avoid exhausting small hosts or mobile browsers. Larger builds can still use the 2D layer guide when accepted by the parser. The textures are procedural approximations, not the official Minecraft resource-pack textures. The viewer is a companion guide only: it does not read a live PS5 world, detect placed blocks automatically, or draw an in-game hologram. The 3D renderer loads Three.js and OrbitControls from jsDelivr; if those scripts are unavailable, the 2D layer guide remains the fallback.

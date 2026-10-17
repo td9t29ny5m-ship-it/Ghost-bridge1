@@ -341,8 +341,8 @@ async function loadSchematicForViewer(name) {
   const start = schematic.start()
   const end = schematic.end()
   const volume = size && size.x * size.y * size.z
-  if (!size || !Number.isFinite(volume) || volume < 1 || volume > 100000) {
-    throw new Error('This schematic is empty or larger than the viewer safety limit of 100,000 blocks.')
+  if (!size || !Number.isFinite(volume) || volume < 1 || volume > 100000 || size.x > 512 || size.y > 512 || size.z > 512) {
+    throw new Error('This schematic is empty or exceeds the viewer safety limit of 100,000 blocks or 512 blocks on any axis.')
   }
   const layerCounts = Array(size.y).fill(0)
   const paletteCounts = new Map()
@@ -375,7 +375,24 @@ app.get('/api/schematics/:name/preview', auth, async (req, res) => {
   if (name !== req.params.name || !FILE_RE.test(name)) return res.status(400).json({ error: 'Invalid schematic filename.' })
   try {
     const entry = await loadSchematicForViewer(name)
-    if (req.query.layer === undefined) return res.json(entry.metadata)
+    if (req.query.layer === undefined && req.query.scene !== '1') return res.json(entry.metadata)
+    if (req.query.scene === '1') {
+      const { dimensions, start } = entry.metadata
+      const end = entry.schematic.end()
+      const blocks = []
+      for (let y = start.y; y <= end.y; y++) {
+        for (let z = start.z; z <= end.z; z++) {
+          for (let x = start.x; x <= end.x; x++) {
+            const block = entry.schematic.getBlock(new Vec3(x, y, z))
+            const blockName = String(block && block.name || '').replace(/^minecraft:/, '')
+            if (!blockName || ['air', 'cave_air', 'void_air'].includes(blockName)) continue
+            if (blocks.length >= 30000) return res.status(413).json({ error: 'This 3D viewer is limited to 30,000 solid blocks for smooth mobile performance. The layer guide can still be used.' })
+            blocks.push({ x: x - start.x, y: y - start.y, z: z - start.z, name: blockName })
+          }
+        }
+      }
+      return res.json({ name, dimensions, blockCount: blocks.length, blocks })
+    }
     const layer = Number(req.query.layer)
     const { dimensions, start } = entry.metadata
     if (!Number.isInteger(layer) || layer < 0 || layer >= dimensions.y) return res.status(400).json({ error: 'Layer is outside this schematic.' })
