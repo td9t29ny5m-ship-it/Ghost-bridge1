@@ -8,6 +8,8 @@ const os = require('os')
 const fs = require('fs')
 const path = require('path')
 const bedrock = require('bedrock-protocol')
+const { Schematic } = require('prismarine-schematic')
+const { Vec3 } = require('vec3')
 const { Authflow, Titles } = require('prismarine-auth')
 const { createGhost } = require('./ghost')
 
@@ -314,12 +316,84 @@ app.put('/api/schematics/:name', auth, express.raw({ type: () => true, limit: '6
   const name = path.basename(req.params.name)
   if (!FILE_RE.test(name)) return res.status(400).json({ error: 'Use a .litematic, .schem, .schematic, .nbt or .mcstructure file (simple file name).' })
   if (!Buffer.isBuffer(req.body) || !req.body.length) return res.status(400).json({ error: 'Empty upload.' })
-  fs.writeFileSync(path.join(SCHEM_DIR, name), req.body); res.json({ files: list() })
+  fs.writeFileSync(path.join(SCHEM_DIR, name), req.body); schematicViewerCache.delete(name); res.json({ files: list() })
 })
 app.delete('/api/schematics/:name', auth, (req, res) => {
   const name = path.basename(req.params.name)
-  if (FILE_RE.test(name)) fs.rmSync(path.join(SCHEM_DIR, name), { force: true })
+  if (FILE_RE.test(name)) { fs.rmSync(path.join(SCHEM_DIR, name), { force: true }); schematicViewerCache.delete(name) }
   res.json({ files: list() })
+})
+
+// Browser schematic workbench: parse supported Sponge/legacy schematics on demand.
+// The viewer is a guide only; these coordinates are never sent to the Minecraft server.
+const schematicViewerCache = new Map()
+async function loadSchematicForViewer(name) {
+  if (!/^[\w .()-]{1,80}\.(schem|schematic)$/i.test(name)) {
+    throw new Error('The layer viewer currently supports .schem and .schematic files. .litematic, .nbt and .mcstructure uploads are stored but not parsed by this viewer yet.')
+  }
+  const filePath = path.join(SCHEM_DIR, name)
+  const stat = await fs.promises.stat(filePath).catch(() => null)
+  if (!stat || !stat.isFile()) throw new Error('That schematic was not found. Upload it again and retry.')
+  const cached = schematicViewerCache.get(name)
+  if (cached && cached.mtimeMs === stat.mtimeMs && cached.sizeBytes === stat.size) return cached
+  const schematic = await Schematic.read(await fs.promises.readFile(filePath))
+  const size = schematic.size
+  const start = schematic.start()
+  const end = schematic.end()
+  const volume = size && size.x * size.y * size.z
+  if (!size || !Number.isFinite(volume) || volume < 1 || volume > 100000) {
+    throw new Error('This schematic is empty or larger than the viewer safety limit of 100,000 blocks.')
+  }
+  const layerCounts = Array(size.y).fill(0)
+  const paletteCounts = new Map()
+  let blockCount = 0
+  for (let y = start.y; y <= end.y; y++) {
+    for (let z = start.z; z <= end.z; z++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const block = schematic.getBlock(new Vec3(x, y, z))
+        const blockName = String(block && block.name || '').replace(/^minecraft:/, '')
+        if (!blockName || ['air', 'cave_air', 'void_air'].includes(blockName)) continue
+        blockCount++
+        layerCounts[y - start.y]++
+        paletteCounts.set(blockName, (paletteCounts.get(blockName) || 0) + 1)
+      }
+    }
+  }
+  const metadata = {
+    name, dimensions: { x: size.x, y: size.y, z: size.z },
+    start: { x: start.x, y: start.y, z: start.z }, blockCount,
+    layerCounts, palette: Array.from(paletteCounts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 24)
+  }
+  const entry = { mtimeMs: stat.mtimeMs, sizeBytes: stat.size, schematic, metadata }
+  schematicViewerCache.delete(name)
+  schematicViewerCache.set(name, entry)
+  while (schematicViewerCache.size > 3) schematicViewerCache.delete(schematicViewerCache.keys().next().value)
+  return entry
+}
+app.get('/api/schematics/:name/preview', auth, async (req, res) => {
+  const name = path.basename(req.params.name)
+  if (name !== req.params.name || !FILE_RE.test(name)) return res.status(400).json({ error: 'Invalid schematic filename.' })
+  try {
+    const entry = await loadSchematicForViewer(name)
+    if (req.query.layer === undefined) return res.json(entry.metadata)
+    const layer = Number(req.query.layer)
+    const { dimensions, start } = entry.metadata
+    if (!Number.isInteger(layer) || layer < 0 || layer >= dimensions.y) return res.status(400).json({ error: 'Layer is outside this schematic.' })
+    const y = start.y + layer
+    const blocks = []
+    const end = entry.schematic.end()
+    for (let z = start.z; z <= end.z; z++) {
+      for (let x = start.x; x <= end.x; x++) {
+        const block = entry.schematic.getBlock(new Vec3(x, y, z))
+        const blockName = String(block && block.name || '').replace(/^minecraft:/, '')
+        if (!blockName || ['air', 'cave_air', 'void_air'].includes(blockName)) continue
+        blocks.push({ x: x - start.x, z: z - start.z, name: blockName })
+      }
+    }
+    res.json({ name, layer, dimensions, blockCount: blocks.length, blocks })
+  } catch (e) {
+    res.status(400).json({ error: 'Could not read schematic: ' + String(e.message || e).slice(0, 220) })
+  }
 })
 
 function registerAssetRoutes(route, dir, re, label, listing) {
