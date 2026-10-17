@@ -13,6 +13,35 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
 .model-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 9px}.model-heading>div{display:flex;flex-direction:column;gap:3px}.model-heading strong{font-size:14px}.model-heading span:not(.badge){font-size:11px;color:var(--muted)}.schem-3d{height:clamp(300px,58vw,540px);min-height:300px;position:relative;overflow:hidden;border:1px solid #2b3a50;border-radius:14px;background:radial-gradient(ellipse at 50% 40%,#172336,#080d14 75%);touch-action:none}.schem-3d canvas{display:block;width:100%;height:100%;outline:none}.model-placeholder{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--muted);font-size:13px}.model-controls{padding:0 0 6px}.model-controls .actions{margin:10px 0}.model-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}.model-stats>div{border:1px solid var(--line);border-radius:10px;padding:10px;min-width:0}.model-stats span{display:block;font-size:10px;color:var(--muted);letter-spacing:.07em}.model-stats strong{display:block;font-size:17px;margin-top:4px;overflow-wrap:anywhere}.selected-block{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:11px;border:1px solid #34516b;border-radius:11px;background:#0e1b28}.selected-block>div{display:flex;flex-direction:column;gap:4px;min-width:0}.selected-block strong{font-size:12px;overflow-wrap:anywhere}.selected-block span{font-size:11px;color:var(--muted);overflow-wrap:anywhere}.selected-block .btn{font-size:11px;padding:8px;white-space:nowrap}
 .material-tools{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:13px;background:#ffffff03}.material-summary{font-size:12px;color:var(--muted);margin:8px 0}.material-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:6px;max-height:270px;overflow:auto;margin-top:10px}.material-item{display:flex;justify-content:space-between;gap:8px;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:11px}.material-item span:first-child{overflow-wrap:anywhere}.material-item strong{white-space:nowrap}.build-progress{margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:12px}.progress-top{display:flex;justify-content:space-between;gap:10px;font-size:13px}.progress-track{height:8px;border-radius:99px;background:#1d2938;overflow:hidden;margin-top:9px}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--blue));border-radius:99px;transition:width .2s}.schem-canvas{height:260px}.model-controls .field{margin-top:12px}.model-controls .actions .btn{padding:9px 11px;font-size:12px}.schem-3d:fullscreen{height:100vh;min-height:100vh;border:0;border-radius:0}.schem-3d:fullscreen canvas{height:100vh}@media(max-width:440px){.model-stats strong{font-size:14px}.model-stats span{font-size:9px}.material-list{grid-template-columns:1fr 1fr}.model-heading{align-items:flex-start}.model-heading .badge{font-size:10px}}
 @media(min-width:600px){main{padding:28px 22px 70px}.hero{padding:28px}.card{padding:20px}.hero h2{font-size:30px}}@media(max-width:380px){.grid{grid-template-columns:1fr}.card.full{grid-column:auto}.inputrow{grid-template-columns:minmax(0,1fr) 90px}.badge{font-size:11px}.hero h2{font-size:22px}}
+
+
+/* Portrait-first phone navigation: no sideways page drift, with a thumb-friendly dock. */
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none;scroll-padding-top:12px;scroll-padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+section[id]{scroll-margin-top:14px;scroll-margin-bottom:calc(82px + env(safe-area-inset-bottom))}
+.bottom-nav{display:none}
+@media(max-width:600px){
+ main{padding:12px 12px calc(94px + env(safe-area-inset-bottom));width:100%}
+ .top{margin-bottom:14px;position:relative}
+ .grid{grid-template-columns:minmax(0,1fr);gap:10px}
+ .card.full{grid-column:auto}
+ .hero{padding:17px;border-radius:20px}
+ .hero h2{font-size:23px}
+ .card{padding:14px;border-radius:17px}
+ .section-head{align-items:flex-start}
+ .section-head>.btn{flex:none}
+ .actions{gap:7px}
+ .actions .btn{flex:1 1 auto;min-width:0}
+ .inputrow{grid-template-columns:minmax(0,1fr) 92px}
+ .schem-3d{height:52vh;height:clamp(300px,52dvh,470px);min-height:300px}
+ .schem-canvas{width:100%;height:auto;min-height:200px}
+ .bottom-nav{position:fixed;z-index:1000;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:7px;border:1px solid #34465d;background:rgba(10,16,25,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-radius:18px;box-shadow:0 8px 35px #0009}
+ .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;padding:6px 2px;border-radius:11px;text-decoration:none;color:var(--muted);font-size:10px;font-weight:800;line-height:1.2;touch-action:manipulation}
+ .bottom-nav a span{font-size:17px;line-height:1.2;color:var(--cyan)}
+ .bottom-nav a:active,.bottom-nav a:focus-visible{background:#76a7ff20;color:var(--text);outline:1px solid #76a7ff80}
+ .footer{padding:14px 0}
+}
+@media(max-width:380px){main{padding-left:9px;padding-right:9px}.bottom-nav{left:7px;right:7px}.inputrow{grid-template-columns:minmax(0,1fr) 82px}.selected-block{align-items:flex-start;flex-direction:column}.selected-block .btn{width:100%}}
+
 </style>
 </head>
 <body>
@@ -56,7 +85,7 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <div class="note">Ping is measured from the Ghost Bridge host to the destination, not directly from your PS5. The relay uses a 5 ms packet flush target to reduce extra proxy waiting. Your actual in-game latency still depends on the host region, routing, Wi-Fi and DonutSMP.</div>
       </section>
 
-      <section class="card full">
+      <section class="card full" id="connectSection">
         <div class="section-head"><div class="headleft"><div class="stepnum">04</div><div><h2>Choose your destination</h2><p class="muted small">Enter the Bedrock server you want to reach.</p></div></div></div>
         <div class="inputrow">
           <label class="field" style="margin-top:0"><span>SERVER ADDRESS</span><input id="ip" placeholder="e.g. donutsmp.net" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"></label>
@@ -69,7 +98,7 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <p id="connectErr" class="error"></p>
       </section>
 
-      <section class="card full">
+      <section class="card full" id="joinSection">
         <div class="section-head"><div class="headleft"><div class="stepnum">05</div><div><h2>Join from your PS5</h2><p class="muted small">Follow these steps in order.</p></div></div><button id="copyAddr" class="btn ghost">Copy address</button></div>
         <div id="publicAddr" class="addr">Start the bridge to generate your connection address.</div>
         <ol id="steps" class="joinsteps" style="margin-top:12px">
@@ -86,10 +115,10 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
         <p id="cmdStatus" class="note">Commands require an active player session through the Ghost Bridge relay.</p>
       </section>
 
-      <section class="card full">
+      <section class="card full" id="diagnosticsSection">
         <div class="section-head"><div class="headleft"><div class="stepnum">07</div><div><h2>Connection diagnostics</h2><p class="muted small">Plain-English status and recent events.</p></div></div><button id="refreshBtn" class="btn ghost">Refresh</button></div>
         <div id="diagnostic" class="note">Waiting for the first status checkÃ¢ÂÂ¦</div>
-         <div class="note notice">WISPBYTE NETWORK CHECK: The dashboard uses HTTP/TCP. PS5 joining also requires a publicly reachable UDP port. A working website alone does not prove the relay is reachable. Configure RELAY_PUBLIC_HOST and RELAY_PUBLIC_PORT only if Wispbyte provides public UDP forwarding.</div>
+         <div class="note notice">NETWORK NOTE: A working website alone does not prove a public UDP relay is reachable. The invite can fall back to a direct destination join, but schematic traffic interception requires a real public UDP endpoint forwarded to this app.</div>
         <div id="log" class="log" style="margin-top:12px">No events yet.</div>
         <div class="actions"><button id="copyDiag" class="btn">Copy diagnostics</button><button id="outBtn" class="btn ghost">Sign out</button></div>
       </section>
@@ -134,6 +163,12 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
     </div>
   </div>
   <footer class="footer">Ghost Bridge ÃÂ· Keep your host account separate from your main account.</footer>
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <a href="#connectSection"><span>↗</span>Connect</a>
+      <a href="#joinSection"><span>⌁</span>Join</a>
+      <a href="#schematicWorkbench"><span>▦</span>Build</a>
+      <a href="#diagnosticsSection"><span>≋</span>Logs</a>
+    </nav>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -177,7 +212,7 @@ function render(s){
  }
  badge($('bridgeChip'),B.status||'unknown',running?'good':B.status==='error'?'bad':starting?'warn':'');
  $('relayStatus').textContent=running?'Listening on UDP '+(s.relayPort||'unknown')+' Ã¢ÂÂ '+(B.host||'?')+':'+(B.port||'?'):B.status==='error'?(B.error||'Relay failed'):starting?'Opening the relayÃ¢ÂÂ¦':'Not running';
- $('portalStatus').textContent=B.portal==='on'?'Online as a joinable Friends session':B.portal==='error'?'Failed: '+(B.portalError||'unknown error'):'Offline. Start the bridge after host sign-in.';
+ $('portalStatus').textContent=B.portal==='on'?(B.publicHost===B.host?'Online · direct destination invite (no public UDP relay)':'Online · routed through Ghost Bridge UDP relay'):B.portal==='error'?'Failed: '+(B.portalError||'unknown error'):'Offline. Start the bridge after host sign-in.';
  $('version').textContent='Minecraft Bedrock '+(s.version||'unknown');
  badge($('networkChip'),N.status==='ok'?'Monitoring':N.status==='warning'?'Probe warning':N.status==='checking'?'Checking':'Idle',N.status==='ok'?'good':N.status==='warning'?'warn':'');
  $('networkPing').textContent=N.latencyMs!==null&&N.latencyMs!==undefined?N.latencyMs+' ms from bridge host to destination':N.status==='warning'?'No ping reply; game traffic may still work. '+(N.error||''):(running?'Measuring destination ping…':'Start the bridge to measure latency.');
@@ -201,7 +236,7 @@ function render(s){
   'Make sure the alt Xbox account is signed in: '+(H.gamertag||'host account')+'.',
   running?'Bridge is running and targeting '+(B.host||'your server')+':'+(B.port||19132)+'.':'Enter the destination above and tap Start bridge.',
   'On PS5, open Minecraft Ã¢ÂÂ Play Ã¢ÂÂ Friends and look for Ã¢ÂÂGhost ProxyÃ¢ÂÂ.',
-  B.portal==='on'?'If needed, add '+(H.gamertag||'the host gamertag')+' as a friend. Requests can only be accepted while the portal is online.': 'If the Friends session does not appear, check that the host is signed in and the portal status says Online.',
+  B.portal==='on'?'The Friends session is online. Use the game invite sent to '+(B.inviteGamertag||'your Xbox gamertag')+'. '+(B.publicHost===B.host?'This invite connects directly to the destination; public UDP relay is not configured.':'The session routes through the configured Ghost Bridge UDP endpoint.'): 'If the Friends session does not appear, check that the host is signed in and the portal status says Online.',
   'Join the Ghost Proxy session. It should redirect you to the destination selected above.'
  ];
  lines.forEach((t,i)=>{const li=node('li','',t);steps.append(li)});
@@ -209,7 +244,8 @@ function render(s){
  if(B.status==='error')diag.textContent='The relay failed. Check the latest log entries below. Confirm the server address and port, then use Reconnect.';
  else if(H.status!=='ready')diag.textContent='The host account is not authenticated. Sign in with your alt Xbox account before starting the bridge.';
  else if(!running)diag.textContent='The host account is signed in, but the bridge is not running. Start the bridge to create the joinable session.';
- else if(B.portal==='error')diag.textContent='The relay is up, but the Xbox Friends session failed. This can prevent friend requests and console joining. See the portal error in the log.';
+ else if(B.portal==='error')diag.textContent='The relay is up, but the Xbox Friends session failed. Check the portal error in the log. The website will keep the relay status separate from invite status.';
+  else if(B.portal==='on'&&B.publicHost===B.host)diag.textContent='The Xbox Friends session is online. Because no public UDP relay is configured, the invite sends you directly to the destination server. This restores the invite-based join path, but in-game schematic traffic is not routed through Ghost Bridge.';
  else diag.textContent='Status checks are updating automatically every 3 seconds. If the account is signed in but the Friends session is offline, the portal is not running.';
  $('uptime').textContent='Updated '+new Date().toLocaleTimeString();
  $('log').textContent=(s.logs||[]).map(l=>new Date(l.t).toLocaleTimeString()+'  '+l.m).join('\n')||'No recent events yet.';

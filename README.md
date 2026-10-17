@@ -37,3 +37,10 @@ The dashboard includes an experimental browser-based schematic builder for `.sch
 - Mobile-friendly viewport and fullscreen where the browser supports it.
 
 The 3D scene endpoint caps preview payloads at 30,000 solid blocks, and schematic dimensions are limited to 512 blocks per axis and 100,000 total volume to avoid exhausting small hosts or mobile browsers. Larger builds can still use the 2D layer guide when accepted by the parser. The textures are procedural approximations, not the official Minecraft resource-pack textures. The viewer is a companion guide only: it does not read a live PS5 world, detect placed blocks automatically, or draw an in-game hologram. The 3D renderer loads Three.js and OrbitControls from jsDelivr; if those scripts are unavailable, the 2D layer guide remains the fallback.
+
+
+## Xbox invite fallback and mobile navigation
+
+The Friends portal now starts without `RELAY_PUBLIC_HOST`: it falls back to redirecting the invite directly to the chosen destination, which restores the invite-based join path on web-only hosts. In this fallback mode, game traffic bypasses Ghost Bridge, so schematic command interception and relay-based preview cannot work through that connection. Set `RELAY_PUBLIC_HOST` and `RELAY_PUBLIC_PORT` only when a real public UDP endpoint forwards traffic to `RELAY_PORT`. The dashboard reports the route mode and keeps portal errors separate from relay startup errors.
+
+On phone-sized screens the dashboard becomes a single vertical column and uses a fixed bottom navigation dock for Connect, Join, Build, and Logs. iPhone browsers do not reliably let a normal website force the device's orientation, so the layout is portrait-first rather than enforcing an OS-level orientation lock.

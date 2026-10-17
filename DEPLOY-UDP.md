@@ -20,3 +20,7 @@ This project needs a Linux host that permits public UDP traffic. A website-only 
 This Compose file is a deployment foundation, not proof that the current relay implementation successfully binds UDP 19134. Confirm the application logs show the relay listening on the expected port and test an actual Bedrock client. If the current application uses a different relay port, change the UDP mapping and the app relay-port setting together.
 
 Do not expose admin or upload endpoints publicly until authentication is enabled and default credentials are changed. Never commit Microsoft/Xbox tokens, passwords, or .env secrets to GitHub.
+
+
+### Without public UDP
+The dashboard can still start the Xbox Friends portal by redirecting its invite directly to the selected Bedrock destination when `RELAY_PUBLIC_HOST` is not set. This is a compatibility fallback for the invite/join flow only: it bypasses the Ghost Bridge UDP relay, so schematic traffic interception and in-game preview commands cannot operate over that direct connection. For those features, provide a real public UDP endpoint that forwards to the app's `RELAY_PORT`.
