@@ -28,7 +28,7 @@ if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No
 
 // ---------- state shown on the website ----------
 const H = { status: 'signed_out', code: null, uri: null, gamertag: null, error: null } // Xbox host account
-const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
+const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, portalMode: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
 // Bedrock relay batching defaults to 20 ms; a shorter flush target can reduce proxy-added wait.
 const BATCHING_INTERVAL_MS = Math.min(20, Math.max(1, Number(process.env.RELAY_BATCHING_INTERVAL_MS) || 5))
 const network = { status: 'idle', latencyMs: null, minMs: null, avgMs: null, maxMs: null, samples: [], lastCheckedAt: null, error: null, serverVersion: null }
@@ -101,7 +101,7 @@ async function stopBridge () {
   try { if (relay) relay.close() } catch {}
   portal = null; relay = null; ghost = null; playerCode = null
   pendingInviteGamertag = null
-  Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null })
+  Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, portalMode: null, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null })
 }
 async function startPortal (req = { hostname: lastRequestHost }) {
   if (portalStartRunning || B.status !== 'running') return
@@ -113,22 +113,22 @@ async function startPortal (req = { hostname: lastRequestHost }) {
       addLog('Friends session waiting for host sign-in. It will start automatically after sign-in completes.')
       return
     }
+    B.publicHost = B.publicHost || await detectPublicHost(req || { hostname: lastRequestHost })
     B.portal = 'starting'
     B.portalError = null
     try { if (portal) await portal.end() } catch {}
     portal = null
-    // The Friends invite can work even when this host has no public UDP relay.
-    // In that case the portal points straight at the destination; gameplay then bypasses
-    // Ghost Bridge packet interception. Configure RELAY_PUBLIC_HOST only when a real
-    // public UDP endpoint forwards to RELAY_PORT.
+    const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
+    // Prefer the public UDP relay when configured. If the host only exposes the website,
+    // still start the Friends session and send the invite via a direct destination fallback.
+    // Direct mode makes joining possible, but Bedrock traffic bypasses the relay and its preview features.
     const usingPublicRelay = Boolean(RELAY_PUBLIC_HOST)
     const redirectHost = usingPublicRelay ? RELAY_PUBLIC_HOST : B.host
     const redirectPort = usingPublicRelay ? RELAY_PUBLIC_PORT : B.port
-    B.publicHost = redirectHost
-    B.publicPort = redirectPort
-    const { BedrockPortal, Joinability, Modules } = require('bedrock-portal')
+    B.portalMode = usingPublicRelay ? 'relay' : 'direct'
+    if (!usingPublicRelay) addLog('No public UDP relay configured: starting Friends session in direct-join fallback mode. Invites can work, but relay-based schematic features are bypassed.')
     const redirectTarget = await dns.promises.lookup(redirectHost, { family: 4 })
-    addLog('Resolved ' + (usingPublicRelay ? 'public relay' : 'direct destination fallback') + ' ' + redirectHost + ' to IPv4 ' + redirectTarget.address + ':' + redirectPort)
+    addLog('Resolved redirect target ' + redirectHost + ' to IPv4 ' + redirectTarget.address + ':' + redirectPort)
     const nextPortal = new BedrockPortal({
       ip: redirectTarget.address, port: redirectPort, joinability: Joinability.FriendsOfFriends, host: getAuthflow(),
       world: { hostName: 'Ghost Proxy', name: B.host || 'Bedrock Server', version: ghost.version, memberCount: 1, maxMemberCount: 10 }
@@ -143,9 +143,7 @@ async function startPortal (req = { hostname: lastRequestHost }) {
       return
     }
     B.portal = 'on'
-    addLog(usingPublicRelay
-      ? ('Friends-list world redirects through public UDP relay ' + RELAY_PUBLIC_HOST + ':' + RELAY_PUBLIC_PORT + '. Ghost Bridge can inspect forwarded traffic.')
-      : ('Friends-list world is online. Invite redirects directly to ' + B.host + ':' + B.port + ' because no public UDP relay is configured. Join flow works, but schematic commands/traffic interception will not work on this route.'))
+    addLog(usingPublicRelay ? ('Friends-list world redirects through public relay ' + RELAY_PUBLIC_HOST + ':' + RELAY_PUBLIC_PORT) : ('Friends-list world redirects directly to ' + B.host + ':' + B.port + ' (relay bypass mode; portal invite is available, but schematic interception is not)'))
     if (pendingInviteGamertag && B.inviteStatus !== 'sent') {
       B.inviteStatus = 'sending'; B.inviteError = null
       try {
@@ -302,7 +300,7 @@ app.post('/api/connect', auth, express.json(), async (req, res) => {
     addLog('Connect request failed: ' + e.message)
     return res.status(400).json({ error: e.message })
   }
-  if (B.status === 'error') return res.status(502).json({ error: B.error || 'The Bedrock relay failed to start.' })
+  if (B.status === 'error' || B.portal === 'error') return res.status(502).json({ error: B.error || B.portalError || 'The Bedrock portal failed to start.' })
   res.json({ ok: true, status: B.status, portal: B.portal, host: B.host, port: B.port })
 })
 app.post('/api/disconnect', auth, async (req, res) => { await stopBridge(); res.json({ ok: true }) })
