@@ -47,7 +47,15 @@ main{width:min(100%,780px);margin:auto;padding:20px 15px 64px}.top{display:flex;
       </section>
 
       <section class="card full">
-        <div class="section-head"><div class="headleft"><div class="stepnum">03</div><div><h2>Choose your destination</h2><p class="muted small">Enter the Bedrock server you want to reach.</p></div></div></div>
+        <div class="section-head"><div class="headleft"><div class="stepnum">03</div><div><h2>Connection performance</h2><p class="muted small">Live relay diagnostics</p></div></div><span id="networkChip" class="badge">Waiting</span></div>
+        <div class="statusline"><div class="statusicon">↔</div><div class="statuscopy"><strong>Relay-to-server ping</strong><span id="networkPing">Waiting for the bridge to start.</span></div></div>
+        <div class="statusline"><div class="statusicon">⌁</div><div class="statuscopy"><strong>Recent ping stability</strong><span id="networkStats">No samples yet.</span></div></div>
+        <div class="statusline"><div class="statusicon">⚡</div><div class="statuscopy"><strong>Packet batching</strong><span id="batchingStatus">Checking relay settings.</span></div></div>
+        <div class="note">Ping is measured from the Ghost Bridge host to the destination, not directly from your PS5. The relay uses a 5 ms packet flush target to reduce extra proxy waiting. Your actual in-game latency still depends on the host region, routing, Wi-Fi and DonutSMP.</div>
+      </section>
+
+      <section class="card full">
+        <div class="section-head"><div class="headleft"><div class="stepnum">04</div><div><h2>Choose your destination</h2><p class="muted small">Enter the Bedrock server you want to reach.</p></div></div></div>
         <div class="inputrow">
           <label class="field" style="margin-top:0"><span>SERVER ADDRESS</span><input id="ip" placeholder="e.g. donutsmp.net" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="url"></label>
           <label class="field" style="margin-top:0"><span>PORT</span><input id="port" placeholder="19132" value="19132" inputmode="numeric"></label>
@@ -125,7 +133,7 @@ async function doLogin(){
 }
 $('loginBtn').onclick=doLogin;$('pw').onkeydown=e=>{if(e.key==='Enter')doLogin()};$('outBtn').onclick=showLogin;
 function render(s){
- state=s;lastPoll=Date.now();const H=s.host||{},B=s.bridge||{};
+ state=s;lastPoll=Date.now();const H=s.host||{},B=s.bridge||{},N=s.network||{};
  const running=B.status==='running',starting=B.status==='starting';
  badge($('overall'),running&&B.portal==='on'?'Ready':running?'Relay active':starting?'Starting':B.status==='error'?'Needs attention':'Not connected',running&&B.portal==='on'?'good':starting?'warn':B.status==='error'?'bad':'');
  badge($('hostChip'),H.status==='ready'?'Signed in':H.status==='signing_in'?'Waiting for sign-in':H.status==='error'?'Sign-in error':'Signed out',H.status==='ready'?'good':H.status==='error'?'bad':'warn');
@@ -143,6 +151,10 @@ function render(s){
  $('relayStatus').textContent=running?'Listening on UDP '+(s.relayPort||'unknown')+' Ã¢ÂÂ '+(B.host||'?')+':'+(B.port||'?'):B.status==='error'?(B.error||'Relay failed'):starting?'Opening the relayÃ¢ÂÂ¦':'Not running';
  $('portalStatus').textContent=B.portal==='on'?'Online as a joinable Friends session':B.portal==='error'?'Failed: '+(B.portalError||'unknown error'):'Offline. Start the bridge after host sign-in.';
  $('version').textContent='Minecraft Bedrock '+(s.version||'unknown');
+ badge($('networkChip'),N.status==='ok'?'Monitoring':N.status==='warning'?'Probe warning':N.status==='checking'?'Checking':'Idle',N.status==='ok'?'good':N.status==='warning'?'warn':'');
+ $('networkPing').textContent=N.latencyMs!==null&&N.latencyMs!==undefined?N.latencyMs+' ms from bridge host to destination':N.status==='warning'?'No ping reply; game traffic may still work. '+(N.error||''):(running?'Measuring destination ping…':'Start the bridge to measure latency.');
+ $('networkStats').textContent=N.samples&&N.samples.length?('Min '+N.minMs+' ms · average '+N.avgMs+' ms · max '+N.maxMs+' ms, last '+N.samples.length+' samples'):(N.status==='warning'?'Probe unavailable. Some servers restrict status pings.':'Samples appear here as the monitor runs.');
+ $('batchingStatus').textContent='Target flush interval: '+(s.batchingIntervalMs||5)+' ms. Lower values can reduce proxy delay but may use slightly more CPU.';
  $('startBtn').disabled=starting;$('stopBtn').disabled=!(running||starting);$('reconnectBtn').disabled=starting;
  if(document.activeElement!==$('ip')&&B.host)$('ip').value=B.host;
  if(document.activeElement!==$('port')&&B.port)$('port').value=B.port;

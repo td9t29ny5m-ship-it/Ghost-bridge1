@@ -27,6 +27,11 @@ if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No
 // ---------- state shown on the website ----------
 const H = { status: 'signed_out', code: null, uri: null, gamertag: null, error: null } // Xbox host account
 const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
+// Bedrock relay batching defaults to 20 ms; a shorter flush target can reduce proxy-added wait.
+const BATCHING_INTERVAL_MS = Math.min(20, Math.max(1, Number(process.env.RELAY_BATCHING_INTERVAL_MS) || 5))
+const network = { status: 'idle', latencyMs: null, minMs: null, avgMs: null, maxMs: null, samples: [], lastCheckedAt: null, error: null, serverVersion: null }
+let pingTimer = null
+let pingInProgress = false
 const logs = []; const feed = []
 let playerCode = null
 const addLog = m => { logs.push({ t: Date.now(), m: String(m) }); if (logs.length > 200) logs.shift(); console.log('[bridge]', m) }
@@ -87,6 +92,8 @@ let portalStartRunning = false
 let lastRequestHost = 'localhost'
 let pendingInviteGamertag = null
 async function stopBridge () {
+  if (pingTimer) { clearInterval(pingTimer); pingTimer = null }
+  Object.assign(network, { status: 'idle', latencyMs: null, minMs: null, avgMs: null, maxMs: null, samples: [], lastCheckedAt: null, error: null, serverVersion: null })
   if (portalRetryTimer) { clearTimeout(portalRetryTimer); portalRetryTimer = null }
   try { if (portal) await portal.end() } catch {}
   try { if (relay) relay.close() } catch {}
@@ -172,6 +179,42 @@ async function startPortal (req = { hostname: lastRequestHost }) {
     portalStartRunning = false
   }
 }
+async function sampleNetwork () {
+  if (pingInProgress || B.status !== 'running' || !B.host || !B.port) return
+  pingInProgress = true
+  if (!network.samples.length) network.status = 'checking'
+  const started = Date.now()
+  try {
+    const pong = await bedrock.ping({ host: B.host, port: B.port, timeout: 1800 })
+    const ms = Math.max(0, Date.now() - started)
+    network.samples.push(ms)
+    if (network.samples.length > 10) network.samples.shift()
+    network.latencyMs = ms
+    network.minMs = Math.min(...network.samples)
+    network.maxMs = Math.max(...network.samples)
+    network.avgMs = Math.round(network.samples.reduce((sum, n) => sum + n, 0) / network.samples.length)
+    network.status = 'ok'
+    network.error = null
+    network.serverVersion = pong && (pong.version || pong.gameVersion) || null
+  } catch (e) {
+    const firstFailure = network.status !== 'warning'
+    network.status = 'warning'
+    network.latencyMs = null
+    network.error = String(e && e.message || e).slice(0, 180)
+    if (firstFailure) addLog('Server ping probe failed (the game connection may still work): ' + network.error)
+  } finally {
+    network.lastCheckedAt = Date.now()
+    pingInProgress = false
+  }
+}
+function startNetworkMonitor () {
+  if (pingTimer) clearInterval(pingTimer)
+  Object.assign(network, { status: 'checking', latencyMs: null, minMs: null, avgMs: null, maxMs: null, samples: [], lastCheckedAt: null, error: null, serverVersion: null })
+  sampleNetwork().catch(e => addLog('Network monitor error: ' + e.message))
+  pingTimer = setInterval(() => sampleNetwork().catch(e => addLog('Network monitor error: ' + e.message)), 15000)
+  if (pingTimer && typeof pingTimer.unref === 'function') pingTimer.unref()
+}
+
 async function startBridge (host, port, req, inviteGamertag = null) {
   await checkDest(host, port)
   lastRequestHost = (req && req.hostname) || lastRequestHost
@@ -185,6 +228,7 @@ async function startBridge (host, port, req, inviteGamertag = null) {
     ghost = createGhost({ stateKey: `${host}:${port}`, schemDir: SCHEM_DIR, stateFile: path.join(DATA, 'state.json'), onSay: addFeed, log: addLog })
     relay = new bedrock.Relay({
       version: ghost.version, host: '0.0.0.0', port: RELAY_PORT, destination: { host, port },
+      batchingInterval: BATCHING_INTERVAL_MS,
       profilesFolder: path.join(DATA, 'profiles'), motd: { motd: 'Ghost Proxy', levelName: host },
       onMsaCode: (code, ds) => { // first join: the player signs in once so the server sees their own account
         playerCode = { code: code.user_code, uri: code.verification_uri, at: Date.now() }
@@ -197,7 +241,8 @@ async function startBridge (host, port, req, inviteGamertag = null) {
     relay.on('error', e => addLog('Relay error: ' + (e && e.message)))
     await Promise.resolve(relay.listen())
     B.status = 'running'; B.since = Date.now()
-    addLog(`Relay up on UDP ${RELAY_PORT} -> ${host}:${port} (Minecraft ${ghost.version})`)
+    addLog(`Relay up on UDP ${RELAY_PORT} -> ${host}:${port} (Minecraft ${ghost.version}; packet batching ${BATCHING_INTERVAL_MS} ms)`)
+    startNetworkMonitor()
   } catch (e) { B.status = 'error'; B.error = e.message; addLog('Relay failed: ' + e.message); return }
 
   await startPortal(req)
@@ -234,7 +279,7 @@ const listAddons = () => listDir(ADDON_DIR, ADDON_RE)
 
 app.get('/api/state', auth, (req, res) => {
   const cur = ghost && ghost.current()
-  res.json({ host: H, bridge: B, relayPort: RELAY_PORT, localIps, version: ghost ? ghost.version : require('./ghost').defaultVersion(), playerCode,
+  res.json({ host: H, bridge: B, relayPort: RELAY_PORT, batchingIntervalMs: BATCHING_INTERVAL_MS, network, localIps, version: ghost ? ghost.version : require('./ghost').defaultVersion(), playerCode,
     player: cur ? cur.status() : null, files: list(), resourcePacks: listPacks(), addons: listAddons(), feed: feed.slice(-30), logs: logs.slice(-40) })
 })
 app.post('/api/host/login', auth, (req, res) => { hostLogin(); res.json({ ok: true }) })
