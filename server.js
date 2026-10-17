@@ -28,7 +28,8 @@ if (!ADMIN) { ADMIN = crypto.randomBytes(5).toString('hex'); console.log(`\n  No
 
 // ---------- state shown on the website ----------
 const H = { status: 'signed_out', code: null, uri: null, gamertag: null, error: null } // Xbox host account
-const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, portalMode: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null }
+const B = { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, portalMode: null, publicHost: null, publicPort: RELAY_PUBLIC_PORT, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null,
+  packExchange: { status: 'waiting_for_connection', serverPackCount: null, packetsSeen: 0, lastPacket: null, lastUpdated: null, note: 'Diagnostics only: custom-pack substitution is not implemented yet.' } }
 // Bedrock relay batching defaults to 20 ms; a shorter flush target can reduce proxy-added wait.
 const BATCHING_INTERVAL_MS = Math.min(20, Math.max(1, Number(process.env.RELAY_BATCHING_INTERVAL_MS) || 5))
 const network = { status: 'idle', latencyMs: null, minMs: null, avgMs: null, maxMs: null, samples: [], lastCheckedAt: null, error: null, serverVersion: null }
@@ -100,6 +101,7 @@ async function stopBridge () {
   try { if (portal) await portal.end() } catch {}
   try { if (relay) relay.close() } catch {}
   portal = null; relay = null; ghost = null; playerCode = null
+  B.packExchange = { status: 'waiting_for_connection', serverPackCount: null, packetsSeen: 0, lastPacket: null, lastUpdated: null, note: 'Diagnostics only: custom-pack substitution is not implemented yet.' }
   pendingInviteGamertag = null
   Object.assign(B, { status: 'stopped', host: null, port: null, since: null, error: null, portal: 'off', portalError: null, portalMode: null, inviteGamertag: null, inviteStatus: 'not_requested', inviteError: null })
 }
@@ -235,6 +237,39 @@ async function startBridge (host, port, req, inviteGamertag = null) {
         addLog(`Player sign-in needed: ${code.user_code}`)
         ds.disconnect("First time here! Sign in at microsoft.com/link with code " + code.user_code + ", then rejoin.")
       }
+    })
+    // Observe the native Bedrock resource-pack handshake without changing or logging pack bytes,
+    // hashes, content keys, authentication data, or signed URLs. This confirms whether the
+    // destination offers packs and whether the console completes the ordinary exchange.
+    relay.on('connect', player => {
+      player.on('clientbound', ({ name, params }) => {
+        if (!name || !name.startsWith('resource_pack_')) return
+        const state = B.packExchange
+        state.packetsSeen++
+        state.lastPacket = 'server→console: ' + name
+        state.lastUpdated = Date.now()
+        if (name === 'resource_packs_info') {
+          const packs = params && (params.resource_packs || params.texture_packs)
+          state.serverPackCount = Array.isArray(packs) ? packs.length : null
+          state.status = state.serverPackCount > 0 ? 'server_packs_detected' : 'server_pack_info_received'
+          addLog('Pack diagnostics: destination sent resource_packs_info' +
+            (state.serverPackCount === null ? ' (pack count unavailable in this protocol schema)' : ' (' + state.serverPackCount + ' pack(s))'))
+        } else if (name === 'resource_pack_stack') {
+          state.status = 'server_pack_stack_received'
+          addLog('Pack diagnostics: destination sent resource_pack_stack; forwarding unchanged')
+        }
+      })
+      player.on('serverbound', ({ name, params }) => {
+        if (name !== 'resource_pack_client_response') return
+        const state = B.packExchange
+        state.packetsSeen++
+        state.lastPacket = 'console→server: ' + name
+        state.lastUpdated = Date.now()
+        const response = params && (params.response || params.status)
+        if (response !== undefined) state.status = 'console_pack_response_' + String(response)
+        addLog('Pack diagnostics: console responded to resource-pack exchange (response value ' +
+          (response === undefined ? 'unavailable' : String(response)) + '); forwarded unchanged')
+      })
     })
     ghost.attach(relay)
     relay.on('join', ds => { playerCode = null; addLog(`${(ds.profile && ds.profile.name) || 'A player'} joined ${host}:${port}`) })
