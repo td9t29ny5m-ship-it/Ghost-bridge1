@@ -389,13 +389,13 @@ function gridSchematic(size, blockMap) {
     size: dimensions,
     start: () => start,
     end: () => end,
-    getBlock: pos => ({ name: blockMap.get(`${pos.x},${pos.y},${pos.z}`) || 'air' })
+    getBlock: pos => { const block=blockMap.get(`${pos.x},${pos.y},${pos.z}`); return block ? { name:block.name, properties:block.properties||{} } : { name:'air', properties:{} } }
   }
 }
-function addSolid(map, x, y, z, name) {
+function addSolid(map, x, y, z, name, properties = {}) {
   name = nbtName(name)
   if (!name || ['air', 'cave_air', 'void_air', 'structure_void'].includes(name)) return
-  map.set(`${x},${y},${z}`, name)
+  map.set(`${x},${y},${z}`, { name, properties: properties && typeof properties === 'object' ? properties : {} })
 }
 function parseLitematic(root) {
   const regions = root && root.Regions
@@ -462,14 +462,14 @@ function parseLitematic(root) {
       const name = state && (state.Name || state.name)
       if (!name) continue
       const world = { x: pos.x + (signed.x < 0 ? -x : x), y: pos.y + (signed.y < 0 ? -y : y), z: pos.z + (signed.z < 0 ? -z : z) }
-      worldBlocks.push({ ...world, name })
+      worldBlocks.push({ ...world, name, properties: state.Properties || state.properties || {} })
     }
   }
   if (!worldBlocks.length || !Number.isFinite(min.x)) throw new Error('No block data was found in this Litematica file.')
   const size = { x: max.x-min.x+1, y: max.y-min.y+1, z: max.z-min.z+1 }
   if (size.x*size.y*size.z > 100000 || Math.max(size.x,size.y,size.z)>512) throw new Error('The combined Litematica regions exceed the viewer safety limit.')
   const map = new Map()
-  for (const b of worldBlocks) addSolid(map,b.x-min.x,b.y-min.y,b.z-min.z,b.name)
+  for (const b of worldBlocks) addSolid(map,b.x-min.x,b.y-min.y,b.z-min.z,b.name,b.properties)
   return gridSchematic(size,map)
 }
 function parseStructureNbt(root) {
@@ -488,7 +488,7 @@ function parseStructureNbt(root) {
     const x=nbtNumber(p[0]), y=nbtNumber(p[1]), z=nbtNumber(p[2])
     if (x<0||y<0||z<0||x>=size.x||y>=size.y||z>=size.z) continue
     const paletteEntry=palette[state]
-    addSolid(map,x,y,z,paletteEntry.Name || paletteEntry.name)
+    addSolid(map,x,y,z,paletteEntry.Name || paletteEntry.name,paletteEntry.Properties || paletteEntry.properties || {})
   }
   return gridSchematic(size,map)
 }
@@ -507,7 +507,7 @@ function parseMcstructure(root) {
     const paletteIndex=nbtNumber(indices[index])
     if (paletteIndex<0 || !palette[paletteIndex]) continue
     const x=index%size.x, z=Math.floor(index/size.x)%size.z, y=Math.floor(index/(size.x*size.z))
-    addSolid(map,x,y,z,palette[paletteIndex].name || palette[paletteIndex].Name)
+    addSolid(map,x,y,z,palette[paletteIndex].name || palette[paletteIndex].Name,palette[paletteIndex].states || palette[paletteIndex].States || {})
   }
   return gridSchematic(size,map)
 }
