@@ -583,7 +583,12 @@ app.get('/api/schematics/:name/preview', auth, async (req, res) => {
             const blockName = String(block && block.name || '').replace(/^minecraft:/, '')
             if (!blockName || ['air', 'cave_air', 'void_air'].includes(blockName)) continue
             if (blocks.length >= 30000) return res.status(413).json({ error: 'This 3D viewer is limited to 30,000 solid blocks for smooth mobile performance. The layer guide can still be used.' })
-            blocks.push({ x: x - start.x, y: y - start.y, z: z - start.z, name: blockName })
+            let properties = {}
+            try {
+              if (block && typeof block.getProperties === 'function') properties = block.getProperties() || {}
+              else if (block && block.properties && typeof block.properties === 'object') properties = block.properties
+            } catch {}
+            blocks.push({ x: x - start.x, y: y - start.y, z: z - start.z, name: blockName, properties })
           }
         }
       }
