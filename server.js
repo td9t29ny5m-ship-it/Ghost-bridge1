@@ -389,7 +389,7 @@ function gridSchematic(size, blockMap) {
     size: dimensions,
     start: () => start,
     end: () => end,
-    getBlock: pos => { const block=blockMap.get(`${pos.x},${pos.y},${pos.z}`); return block ? { name:block.name, properties:block.properties||{} } : { name:'air', properties:{} } }
+    getBlock: pos => { const value = blockMap.get(`${pos.x},${pos.y},${pos.z}`); return value && typeof value === 'object' ? value : { name: value || 'air' } }
   }
 }
 function addSolid(map, x, y, z, name, properties = {}) {
@@ -461,15 +461,22 @@ function parseLitematic(root) {
       const state = palette[paletteIndex]
       const name = state && (state.Name || state.name)
       if (!name) continue
-      const world = { x: pos.x + (signed.x < 0 ? -x : x), y: pos.y + (signed.y < 0 ? -y : y), z: pos.z + (signed.z < 0 ? -z : z) }
-      worldBlocks.push({ ...world, name, properties: state.Properties || state.properties || {} })
+      // Normalize each signed region from its minimum corner, but keep the
+      // packed palette's local index increasing in the viewer's positive axes.
+      // Using pos - index and then subtracting min mirrored negative-size axes.
+      const local = {
+        x: (signed.x < 0 ? pos.x - size.x + 1 : pos.x) - min.x + x,
+        y: (signed.y < 0 ? pos.y - size.y + 1 : pos.y) - min.y + y,
+        z: (signed.z < 0 ? pos.z - size.z + 1 : pos.z) - min.z + z
+      }
+      worldBlocks.push({ ...local, name, properties: state.Properties || state.properties || {} })
     }
   }
   if (!worldBlocks.length || !Number.isFinite(min.x)) throw new Error('No block data was found in this Litematica file.')
   const size = { x: max.x-min.x+1, y: max.y-min.y+1, z: max.z-min.z+1 }
   if (size.x*size.y*size.z > 100000 || Math.max(size.x,size.y,size.z)>512) throw new Error('The combined Litematica regions exceed the viewer safety limit.')
   const map = new Map()
-  for (const b of worldBlocks) addSolid(map,b.x-min.x,b.y-min.y,b.z-min.z,b.name,b.properties)
+  for (const b of worldBlocks) addSolid(map,b.x,b.y,b.z,b.name,b.properties)
   return gridSchematic(size,map)
 }
 function parseStructureNbt(root) {
