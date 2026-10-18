@@ -9,6 +9,7 @@ const fs = require('fs')
 const path = require('path')
 const bedrock = require('bedrock-protocol')
 const { Schematic } = require('prismarine-schematic')
+const nbt = require('prismarine-nbt')
 const { Vec3 } = require('vec3')
 const { Authflow, Titles } = require('prismarine-auth')
 const { createGhost } = require('./ghost')
@@ -359,17 +360,151 @@ app.delete('/api/schematics/:name', auth, (req, res) => {
 
 // Browser schematic workbench: parse supported Sponge/legacy schematics on demand.
 // The viewer is a guide only; these coordinates are never sent to the Minecraft server.
+function nbtNumber(value) {
+  if (value && typeof value === 'object' && !Array.isArray(value) && value.value !== undefined) return nbtNumber(value.value)
+  const n = Number(value)
+  if (!Number.isFinite(n)) throw new Error('Invalid numeric value in structure NBT.')
+  return Math.trunc(n)
+}
+function nbtArray(value) {
+  if (Array.isArray(value)) return value
+  if (value && Array.isArray(value.value)) return value.value
+  return []
+}
+function nbtName(value) {
+  if (typeof value === 'string') return value.replace(/^minecraft:/, '')
+  if (value && typeof value === 'object') return nbtName(value.value)
+  return ''
+}
+async function readSchematicNbt(filePath, format = 'big') {
+  const buffer = await fs.promises.readFile(filePath)
+  const parsed = await new Promise((resolve, reject) => nbt.parse(buffer, format, (err, data) => err ? reject(err) : resolve(data)))
+  return nbt.simplify(parsed)
+}
+function gridSchematic(size, blockMap) {
+  const dimensions = new Vec3(size.x, size.y, size.z)
+  const start = new Vec3(0, 0, 0)
+  const end = new Vec3(size.x - 1, size.y - 1, size.z - 1)
+  return {
+    size: dimensions,
+    start: () => start,
+    end: () => end,
+    getBlock: pos => ({ name: blockMap.get(`${pos.x},${pos.y},${pos.z}`) || 'air' })
+  }
+}
+function addSolid(map, x, y, z, name) {
+  name = nbtName(name)
+  if (!name || ['air', 'cave_air', 'void_air', 'structure_void'].includes(name)) return
+  map.set(`${x},${y},${z}`, name)
+}
+function parseLitematic(root) {
+  const regions = root && root.Regions
+  if (!regions || typeof regions !== 'object') throw new Error('This .litematic file has no Regions data.')
+  const worldBlocks = []
+  let min = { x: Infinity, y: Infinity, z: Infinity }, max = { x: -Infinity, y: -Infinity, z: -Infinity }
+  let visited = 0
+  for (const region of Object.values(regions)) {
+    if (!region || !region.Size || !region.Position) continue
+    const signed = { x: nbtNumber(region.Size.x), y: nbtNumber(region.Size.y), z: nbtNumber(region.Size.z) }
+    const size = { x: Math.abs(signed.x), y: Math.abs(signed.y), z: Math.abs(signed.z) }
+    const pos = { x: nbtNumber(region.Position.x), y: nbtNumber(region.Position.y), z: nbtNumber(region.Position.z) }
+    const volume = size.x * size.y * size.z
+    visited += volume
+    if (!size.x || !size.y || !size.z || visited > 100000) throw new Error('This Litematica build exceeds the 100,000-block viewer safety limit.')
+    const palette = nbtArray(region.BlockStatePalette)
+    const states = nbtArray(region.BlockStates)
+    if (!palette.length) continue
+    const bits = Math.max(2, Math.ceil(Math.log2(palette.length)))
+    const perLong = Math.floor(64 / bits)
+    const mask = (1n << BigInt(bits)) - 1n
+    const longs = states.map(v => {
+      if (typeof v === 'bigint') return BigInt.asUintN(64, v)
+      if (typeof v === 'object' && v && v.value !== undefined) v = v.value
+      try { return BigInt.asUintN(64, BigInt(v)) } catch { return 0n }
+    })
+    const bounds = axis => {
+      const a = pos[axis], n = size[axis], signedN = signed[axis]
+      return signedN < 0 ? [a - n + 1, a] : [a, a + n - 1]
+    }
+    for (const axis of ['x','y','z']) { const b = bounds(axis); min[axis] = Math.min(min[axis], b[0]); max[axis] = Math.max(max[axis], b[1]) }
+    for (let y = 0; y < size.y; y++) for (let z = 0; z < size.z; z++) for (let x = 0; x < size.x; x++) {
+      const index = (y * size.z + z) * size.x + x
+      const longIndex = Math.floor(index / perLong), offset = (index % perLong) * bits
+      const paletteIndex = longIndex < longs.length ? Number((longs[longIndex] >> BigInt(offset)) & mask) : 0
+      const state = palette[paletteIndex]
+      const name = state && (state.Name || state.name)
+      if (!name) continue
+      const world = { x: pos.x + (signed.x < 0 ? -x : x), y: pos.y + (signed.y < 0 ? -y : y), z: pos.z + (signed.z < 0 ? -z : z) }
+      worldBlocks.push({ ...world, name })
+    }
+  }
+  if (!worldBlocks.length || !Number.isFinite(min.x)) throw new Error('No block data was found in this Litematica file.')
+  const size = { x: max.x-min.x+1, y: max.y-min.y+1, z: max.z-min.z+1 }
+  if (size.x*size.y*size.z > 100000 || Math.max(size.x,size.y,size.z)>512) throw new Error('The combined Litematica regions exceed the viewer safety limit.')
+  const map = new Map()
+  for (const b of worldBlocks) addSolid(map,b.x-min.x,b.y-min.y,b.z-min.z,b.name)
+  return gridSchematic(size,map)
+}
+function parseStructureNbt(root) {
+  const sizeArray = nbtArray(root && root.size)
+  const size = { x: nbtNumber(sizeArray[0]), y: nbtNumber(sizeArray[1]), z: nbtNumber(sizeArray[2]) }
+  const volume = size.x*size.y*size.z
+  if (!size.x || !size.y || !size.z || volume > 100000 || Math.max(size.x,size.y,size.z)>512) throw new Error('This structure exceeds the 100,000-block viewer safety limit.')
+  const palette = nbtArray(root.palette || root.Palette)
+  const blocks = nbtArray(root.blocks || root.Blocks)
+  if (!palette.length || !blocks.length) throw new Error('This .nbt file is not a supported Minecraft structure file.')
+  const map = new Map()
+  for (const block of blocks) {
+    const p = nbtArray(block.pos || block.Pos)
+    const state = nbtNumber(block.state !== undefined ? block.state : block.State)
+    if (p.length < 3 || !palette[state]) continue
+    const x=nbtNumber(p[0]), y=nbtNumber(p[1]), z=nbtNumber(p[2])
+    if (x<0||y<0||z<0||x>=size.x||y>=size.y||z>=size.z) continue
+    const paletteEntry=palette[state]
+    addSolid(map,x,y,z,paletteEntry.Name || paletteEntry.name)
+  }
+  return gridSchematic(size,map)
+}
+function parseMcstructure(root) {
+  const structure = root && root.structure
+  const sizeArray = nbtArray(root && root.size)
+  const size = { x: nbtNumber(sizeArray[0]), y: nbtNumber(sizeArray[1]), z: nbtNumber(sizeArray[2]) }
+  const volume = size.x*size.y*size.z
+  if (!structure || !size.x || !size.y || !size.z || volume > 100000 || Math.max(size.x,size.y,size.z)>512) throw new Error('This .mcstructure file is invalid or exceeds the viewer safety limit.')
+  const blockLayers = nbtArray(structure.block_indices)
+  const palette = structure.palette && structure.palette.default && nbtArray(structure.palette.default.block_palette)
+  if (!blockLayers.length || !palette || !palette.length) throw new Error('This .mcstructure file has no supported block palette.')
+  const map = new Map()
+  const indices = nbtArray(blockLayers[0])
+  for (let index=0; index<Math.min(indices.length,volume); index++) {
+    const paletteIndex=nbtNumber(indices[index])
+    if (paletteIndex<0 || !palette[paletteIndex]) continue
+    const x=index%size.x, z=Math.floor(index/size.x)%size.z, y=Math.floor(index/(size.x*size.z))
+    addSolid(map,x,y,z,palette[paletteIndex].name || palette[paletteIndex].Name)
+  }
+  return gridSchematic(size,map)
+}
 const schematicViewerCache = new Map()
 async function loadSchematicForViewer(name) {
-  if (!/^[\w .()-]{1,80}\.(schem|schematic)$/i.test(name)) {
-    throw new Error('The layer viewer currently supports .schem and .schematic files. .litematic, .nbt and .mcstructure uploads are stored but not parsed by this viewer yet.')
+  if (!/^[\w .()-]{1,80}\.(litematic|schem|schematic|nbt|mcstructure)$/i.test(name)) {
+    throw new Error('Supported viewer formats: .litematic, .schem, .schematic, structure .nbt, and .mcstructure.')
   }
   const filePath = path.join(SCHEM_DIR, name)
   const stat = await fs.promises.stat(filePath).catch(() => null)
   if (!stat || !stat.isFile()) throw new Error('That schematic was not found. Upload it again and retry.')
   const cached = schematicViewerCache.get(name)
   if (cached && cached.mtimeMs === stat.mtimeMs && cached.sizeBytes === stat.size) return cached
-  const schematic = await Schematic.read(await fs.promises.readFile(filePath))
+  const extension = path.extname(name).toLowerCase()
+  let schematic
+  if (extension === '.schem' || extension === '.schematic') {
+    schematic = await Schematic.read(await fs.promises.readFile(filePath))
+  } else {
+    const format = extension === '.mcstructure' ? 'little' : 'big'
+    const root = await readSchematicNbt(filePath, format)
+    if (extension === '.litematic') schematic = parseLitematic(root)
+    else if (extension === '.mcstructure') schematic = parseMcstructure(root)
+    else schematic = parseStructureNbt(root)
+  }
   const size = schematic.size
   const start = schematic.start()
   const end = schematic.end()
@@ -403,6 +538,7 @@ async function loadSchematicForViewer(name) {
   while (schematicViewerCache.size > 3) schematicViewerCache.delete(schematicViewerCache.keys().next().value)
   return entry
 }
+
 app.get('/api/schematics/:name/preview', auth, async (req, res) => {
   const name = path.basename(req.params.name)
   if (name !== req.params.name || !FILE_RE.test(name)) return res.status(400).json({ error: 'Invalid schematic filename.' })
