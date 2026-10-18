@@ -331,7 +331,7 @@ function combineBlockBoxes(parts){
 function makeCrossedPlantGeometry(){
  const g=new THREE.BufferGeometry(),p=[],uv=[],idx=[];
  for(let plane=0;plane<2;plane++){const a=plane===0?[-.34,0,-.34,.34,0,.34]:[-.34,0,.34,.34,0,-.34];const verts=[[a[0],-.5,a[2]],[a[3],-.5,a[5]],[a[3],.5,a[5]],[a[0],.5,a[2]]];const base=p.length/3;for(const v of verts)p.push(...v);uv.push(0,0,1,0,1,1,0,1);idx.push(base,base+1,base+2,base,base+2,base+3)}
- g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;
+ g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.addGroup(0,idx.length,0);g.computeVertexNormals();return g;
 }
 function makeBlockGeometry(name,properties={}){
  const n=String(name||'').toLowerCase(),p=properties||{};
