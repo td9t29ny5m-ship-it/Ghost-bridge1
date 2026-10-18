@@ -422,6 +422,34 @@ function parseLitematic(root) {
       if (typeof v === 'object' && v && v.value !== undefined) v = v.value
       try { return BigInt.asUintN(64, BigInt(v)) } catch { return 0n }
     })
+    // Litematica files from different Minecraft generations may use either
+    // padded values-per-long storage or a continuous bit stream. Pick the
+    // layout whose exact long-array length matches the region volume.
+    const paddedLongCount = Math.ceil(volume / perLong)
+    const continuousLongCount = Math.ceil((volume * bits) / 64)
+    const packedLayout = continuousLongCount !== paddedLongCount && longs.length === continuousLongCount
+      ? 'continuous'
+      : 'padded'
+    const paletteIndexAt = index => {
+      let value
+      if (packedLayout === 'continuous') {
+        const bitIndex = index * bits
+        const longIndex = Math.floor(bitIndex / 64)
+        const offset = bitIndex % 64
+        if (longIndex >= longs.length) return 0
+        value = longs[longIndex] >> BigInt(offset)
+        if (offset + bits > 64 && longIndex + 1 < longs.length) {
+          value |= longs[longIndex + 1] << BigInt(64 - offset)
+        }
+      } else {
+        const longIndex = Math.floor(index / perLong)
+        const offset = (index % perLong) * bits
+        if (longIndex >= longs.length) return 0
+        value = longs[longIndex] >> BigInt(offset)
+      }
+      const result = Number(value & mask)
+      return result < palette.length ? result : 0
+    }
     const bounds = axis => {
       const a = pos[axis], n = size[axis], signedN = signed[axis]
       return signedN < 0 ? [a - n + 1, a] : [a, a + n - 1]
@@ -429,8 +457,7 @@ function parseLitematic(root) {
     for (const axis of ['x','y','z']) { const b = bounds(axis); min[axis] = Math.min(min[axis], b[0]); max[axis] = Math.max(max[axis], b[1]) }
     for (let y = 0; y < size.y; y++) for (let z = 0; z < size.z; z++) for (let x = 0; x < size.x; x++) {
       const index = (y * size.z + z) * size.x + x
-      const longIndex = Math.floor(index / perLong), offset = (index % perLong) * bits
-      const paletteIndex = longIndex < longs.length ? Number((longs[longIndex] >> BigInt(offset)) & mask) : 0
+      const paletteIndex = paletteIndexAt(index)
       const state = palette[paletteIndex]
       const name = state && (state.Name || state.name)
       if (!name) continue
