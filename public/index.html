@@ -306,7 +306,7 @@ function makeBlockTexture(name){
  if(schematic3D.textureCache.has(name))return schematic3D.textureCache.get(name);
  const fallback=makeFallbackBlockTexture(name);schematic3D.textures.push(fallback);
  const asset=blockTextureAsset(name);const url='https://raw.githubusercontent.com/PrismarineJS/minecraft-assets/master/data/1.21.4/blocks/'+encodeURIComponent(asset)+'.png';
- const texture=new THREE.TextureLoader().load(url,loaded=>{loaded.magFilter=THREE.NearestFilter;loaded.minFilter=THREE.NearestMipmapNearestFilter;if('colorSpace' in loaded&&THREE.SRGBColorSpace)loaded.colorSpace=THREE.SRGBColorSpace;else if('encoding' in loaded)loaded.encoding=THREE.sRGBEncoding;fallback.dispose();const i=schematic3D.textures.indexOf(fallback);if(i>=0)schematic3D.textures.splice(i,1)},undefined,()=>{texture.dispose();schematic3D.textureCache.set(name,fallback)});
+ const texture=new THREE.TextureLoader().load(url,loaded=>{loaded.magFilter=THREE.NearestFilter;loaded.minFilter=THREE.NearestMipmapNearestFilter;if('colorSpace' in loaded&&THREE.SRGBColorSpace)loaded.colorSpace=THREE.SRGBColorSpace;else if('encoding' in loaded)loaded.encoding=THREE.sRGBEncoding;fallback.dispose();const i=schematic3D.textures.indexOf(fallback);if(i>=0)schematic3D.textures.splice(i,1)},undefined,()=>{texture.image=fallback.image;texture.needsUpdate=true;schematic3D.textureCache.set(name,texture)});
  texture.magFilter=THREE.NearestFilter;texture.minFilter=THREE.NearestMipmapNearestFilter;if('colorSpace' in texture&&THREE.SRGBColorSpace)texture.colorSpace=THREE.SRGBColorSpace;else if('encoding' in texture)texture.encoding=THREE.sRGBEncoding;
  schematic3D.textures.push(texture);schematic3D.textureCache.set(name,texture);return texture;
 }
