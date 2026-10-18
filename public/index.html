@@ -338,7 +338,8 @@ function makeBlockGeometry(name,properties={}){
  const key=n+'|'+JSON.stringify(p);if(schematic3D.geometryCache.has(key))return schematic3D.geometryCache.get(key);
  let geometry;
  if(n.endsWith('_slab')&&p.type!=='double')geometry=new THREE.BoxGeometry(1,.5,1);
- else if(['torch','redstone_torch','soul_torch','wall_torch','redstone_wall_torch','soul_wall_torch'].includes(n))geometry=new THREE.BoxGeometry(.16,.68,.16);
+ else if(['torch','redstone_torch','soul_torch'].includes(n))geometry=combineBlockBoxes([{w:.14,h:.52,d:.14,y:-.12},{w:.19,h:.12,d:.19,y:.2}]);
+ else if(['wall_torch','redstone_wall_torch','soul_wall_torch'].includes(n))geometry=combineBlockBoxes([{w:.13,h:.43,d:.13,y:-.08,z:.18},{w:.18,h:.12,d:.18,y:.17,z:.18}]);
  else if(n.endsWith('_pressure_plate'))geometry=new THREE.BoxGeometry(.875,.0625,.875);
  else if(n.endsWith('_carpet'))geometry=new THREE.BoxGeometry(1,.0625,1);
  else if(n.endsWith('_button'))geometry=new THREE.BoxGeometry(.25,.125,.375);
