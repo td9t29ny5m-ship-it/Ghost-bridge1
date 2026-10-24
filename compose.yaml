@@ -7,18 +7,17 @@ services:
     environment:
       NODE_ENV: production
       PORT: "8080"
-      WEB_PORT: "8080"
-      HOST: "0.0.0.0"
+      DATA_DIR: /app/data
       RELAY_PORT: "19134"
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      MC_BEDROCK_VERSION: ${MC_BEDROCK_VERSION:-1.21.90}
     ports:
       - "8080:8080/tcp"
       - "19134:19134/udp"
     volumes:
       - ghost_data:/app/data
-      - ghost_schematics:/app/schematics
-      - ghost_uploads:/app/uploads
     healthcheck:
-      test: ["CMD", "node", "-e", "const s=require('net').connect(8080,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "const http=require('http');const r=http.get('http://127.0.0.1:8080/healthz',x=>process.exit(x.statusCode===200?0:1));r.on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -26,5 +25,3 @@ services:
 
 volumes:
   ghost_data:
-  ghost_schematics:
-  ghost_uploads:

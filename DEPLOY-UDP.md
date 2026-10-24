@@ -1,26 +1,52 @@
-## Ghost Bridge deployment (UDP-capable server)
+# Ghost Bridge deployment (UDP-capable server)
 
-This project needs a Linux host that permits public UDP traffic. A website-only platform that exposes only HTTP/HTTPS will not run the Bedrock relay.
+Ghost Bridge needs a Linux host or network that permits public UDP traffic. A website-only platform that exposes only HTTP/HTTPS can serve the dashboard but cannot provide the Bedrock relay required for the full console connection.
 
-### Included
-- Docker image for the existing Node.js application.
-- Compose file publishing the dashboard on TCP 8080 and relay port on UDP 19134.
-- Persistent volumes for data, schematics and uploads.
+## Included deployment options
+
+- Docker image and Compose configuration.
+- Ubuntu VPS setup script using Node.js 24 or newer.
 - GitHub Actions container-build check.
 
-### Deploy on a Linux VPS
-1. Create a Linux VPS with Docker/Compose support and public IPv4. Confirm its firewall/security group allows inbound TCP 8080 and UDP 19134. Do not use a web-only or Minecraft-game-server-only plan.
-2. On the VPS, clone this repository and enter its folder.
-3. Run: docker compose up -d --build
-4. Check: docker compose ps and docker compose logs --tail=100 ghost-bridge
-5. Open http://YOUR_SERVER_IP:8080 for the dashboard.
-6. For a public website, point a domain to the VPS and put an HTTPS reverse proxy (Caddy or Nginx) in front of TCP 8080. The Bedrock relay remains UDP and must be reachable directly on its published UDP port.
+## Deploy with Docker Compose
 
-### Important validation
-This Compose file is a deployment foundation, not proof that the current relay implementation successfully binds UDP 19134. Confirm the application logs show the relay listening on the expected port and test an actual Bedrock client. If the current application uses a different relay port, change the UDP mapping and the app relay-port setting together.
+1. Install Docker Engine and the Compose plugin on a Linux VPS with a public IPv4 address.
+2. Clone this repository and enter its directory.
+3. Create a local `.env` file containing a strong dashboard password:
 
-Do not expose admin or upload endpoints publicly until authentication is enabled and default credentials are changed. Never commit Microsoft/Xbox tokens, passwords, or .env secrets to GitHub.
+   ```dotenv
+   ADMIN_PASSWORD=replace-this-with-a-long-random-password
+   ```
 
+4. Build and start the app:
 
-### Without public UDP
-The dashboard can still start the Xbox Friends portal by redirecting its invite directly to the selected Bedrock destination when `RELAY_PUBLIC_HOST` is not set. This is a compatibility fallback for the invite/join flow only: it bypasses the Ghost Bridge UDP relay, so schematic traffic interception and in-game preview commands cannot operate over that direct connection. For those features, provide a real public UDP endpoint that forwards to the app's `RELAY_PORT`.
+   ```sh
+   docker compose up -d --build
+   docker compose ps
+   docker compose logs -f ghost-bridge
+   ```
+
+5. Allow inbound TCP 8080 and UDP 19134 in the VPS firewall and cloud security rules.
+6. Open `http://YOUR_SERVER_IP:8080` for the dashboard.
+
+Compose persists application data in the `ghost_data` volume. Back it up before recreating the volume. Do not commit your `.env` file.
+
+## Deploy on Ubuntu without Docker
+
+From the repository directory, run `sudo bash deploy/setup-ubuntu.sh`. The script installs Node.js 24 if needed, installs packages, creates a systemd service, and opens TCP 3000 and UDP 19134 in UFW when UFW is active.
+
+## Public UDP configuration
+
+- `RELAY_PORT`: internal UDP port the app listens on (default 19134).
+- `RELAY_PUBLIC_HOST`: public IP or hostname that console clients can reach over UDP.
+- `RELAY_PUBLIC_PORT`: public UDP port forwarded to `RELAY_PORT`.
+- `ADMIN_PASSWORD`: strong dashboard password.
+- `DATA_DIR`: writable persistent storage path.
+
+Do not set `RELAY_PUBLIC_HOST` to the HTTP dashboard URL. It must point to an actual UDP endpoint forwarding traffic to the app.
+
+## Important validation
+
+A running HTTP dashboard or successful `/healthz` response does not prove UDP reachability, Xbox Friends-portal compatibility, or in-game schematic preview compatibility. Test those separately with a Bedrock client before relying on the service.
+
+Without a public UDP endpoint, the portal may use a direct-join fallback, which bypasses the relay and its schematic interception. Some public servers may prohibit proxying or automation.

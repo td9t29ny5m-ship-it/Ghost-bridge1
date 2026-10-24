@@ -1,14 +1,15 @@
 {
   "name": "ghost-bridge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Ghost Bridge: Bedrock relay with mobile schematic preview controls",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "check": "node --check index.js && node --check server.js && node --check ghost.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dependencies": {
     "bedrock-portal": "*",
