@@ -115,13 +115,13 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     previewCount = count;
     lastStatus = { connected: true, note: 'Preview sent to the client. It is client-side only and does not place real blocks.', schematic: loaded.name, blocks: count, skipped, anchor: { ...anchor }, locked };
     log('Preview sent: ' + count + ' blocks' + (skipped ? ', skipped ' + skipped + ' unsupported block types' : '') + '.');
-    tell('Ghost Bridge: preview sent (' + count + ' blocks). ' + (skipped ? skipped + ' block types were unsupported. ' : '') + 'Use /.build move x y z to reposition or /.build place to lock the preview.');
+    tell('Ghost Bridge: preview sent (' + count + ' blocks). ' + (skipped ? skipped + ' block types were unsupported. ' : '') + 'Use /build move x y z to reposition or /build place to lock the preview.');
   }
 
   async function runCommand(raw) {
     const text = String(raw || '').trim();
     const match = text.match(/^[\/!.]?build\s+(start|move|place|stop|status)(?:\s+(.*))?$/i);
-    if (!match) throw new Error('Use /.build start <filename>, /.build move <x> <y> <z>, /.build place, /.build stop, or /.build status.');
+    if (!match) throw new Error('Use /build start <filename>, /build move <x> <y> <z>, /build place, /build stop, or /build status.');
     const action = match[1].toLowerCase();
     const args = (match[2] || '').trim();
 
@@ -149,16 +149,16 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       return;
     }
     if (action === 'move') {
-      if (!loaded) throw new Error('Run /.build start <filename> first.');
+      if (!loaded) throw new Error('Run /build start <filename> first.');
       const nums = args.split(/[ ,]+/).map(Number);
-      if (nums.length !== 3 || nums.some(n => !Number.isFinite(n) || !Number.isInteger(n))) throw new Error('Format: /.build move <x> <y> <z> using whole-number world coordinates.');
+      if (nums.length !== 3 || nums.some(n => !Number.isFinite(n) || !Number.isInteger(n))) throw new Error('Format: /build move <x> <y> <z> using whole-number world coordinates.');
       anchor = { x: nums[0], y: nums[1], z: nums[2] };
       locked = false;
       drawPreview();
       return;
     }
     if (action === 'place') {
-      if (!loaded || !anchor) throw new Error('Run /.build start <filename> first.');
+      if (!loaded || !anchor) throw new Error('Run /build start <filename> first.');
       locked = true;
       lastStatus = { ...lastStatus, locked: true };
       tell('Preview position locked at ' + anchor.x + ' ' + anchor.y + ' ' + anchor.z + '. This does not place blocks in the server world.');
