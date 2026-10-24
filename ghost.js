@@ -15,6 +15,7 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
   let relay = null;
   let activePlayer = null;
   let playerPosition = null;
+  let playerYaw = 0;
   let loaded = null;
   let anchor = null;
   let locked = false;
@@ -91,6 +92,17 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
     });
   }
 
+  function frontAnchor(distance = 3) {
+    if (!playerPosition) return null;
+    // Bedrock yaw 0 faces +Z; positive yaw turns toward -X.
+    const radians = (Number(playerYaw) || 0) * Math.PI / 180;
+    return {
+      x: Math.floor(playerPosition.x - Math.sin(radians) * distance),
+      y: Math.floor(playerPosition.y),
+      z: Math.floor(playerPosition.z + Math.cos(radians) * distance)
+    };
+  }
+
   function drawPreview() {
     if (!activePlayer || !loaded || !anchor) throw new Error('Join through the Ghost Bridge relay and load a schematic first.');
     let count = 0;
@@ -121,7 +133,7 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
   async function runCommand(raw) {
     const text = String(raw || '').trim();
     const match = text.match(/^[\/!.]?build\s+(start|move|place|stop|status)(?:\s+(.*))?$/i);
-    if (!match) throw new Error('Use /build start <filename>, /build move <x> <y> <z>, /build place, /build stop, or /build status.');
+    if (!match) throw new Error('Use /build start <filename>, /build front [distance], /build move <x> <y> <z>, /build place, /build stop, or /build status.');
     const action = match[1].toLowerCase();
     const args = (match[2] || '').trim();
 
@@ -144,7 +156,18 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       loaded.name = fileName;
       locked = false;
       if (!playerPosition) throw new Error('Move around in the game once so Ghost Bridge can read your position, then run start again.');
-      anchor = { x: Math.floor(playerPosition.x) + 2, y: Math.floor(playerPosition.y), z: Math.floor(playerPosition.z) + 2 };
+      anchor = frontAnchor(3);
+      if (!anchor) throw new Error('Move in-game once so Ghost Bridge can read your position, then run start again.');
+      drawPreview();
+      return;
+    }
+    if (action === 'front') {
+      if (!loaded) throw new Error('Run /build start <filename> first.');
+      if (!playerPosition) throw new Error('Move in-game once so Ghost Bridge can read your position.');
+      const distance = args ? Number(args) : 3;
+      if (!Number.isFinite(distance) || distance < 1 || distance > 16) throw new Error('Format: /build front [distance], using a distance from 1 to 16 blocks.');
+      anchor = frontAnchor(Math.floor(distance));
+      locked = false;
       drawPreview();
       return;
     }
@@ -197,6 +220,7 @@ function createGhost({ stateKey, schemDir, stateFile, onSay = () => {}, log = ()
       const params = packet && packet.params || {};
       if (name === 'move_player' && params.position && Number.isFinite(params.position.x)) {
         playerPosition = { x: params.position.x, y: params.position.y, z: params.position.z };
+        if (params.rotation && Number.isFinite(params.rotation.y)) playerYaw = params.rotation.y;
       }
       let command = null;
       if (name === 'text' && typeof params.message === 'string') command = params.message;
