@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ghost Stream · Live Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#080b12;--panel:#111827;--line:#263247;--muted:#9aa8bd;--accent:#8b5cf6;--cyan:#22d3ee}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0%,#1b1640 0,transparent 42%),var(--bg);color:#f5f7fb;font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);gap:12px}h1{font-size:18px;margin:0}h1 span{color:var(--cyan)}.tag{font-size:11px;color:#a5f3fc;border:1px solid #155e75;padding:5px 9px;border-radius:99px}
+main{max-width:1250px;margin:auto;padding:18px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr);gap:16px}
+.panel{background:linear-gradient(160deg,#151d2d,#0e1420);border:1px solid var(--line);border-radius:16px;padding:15px;min-width:0}.stage{position:relative;background:#02040a;aspect-ratio:16/9;border-radius:11px;overflow:hidden;border:1px solid #303b50}.stage iframe{width:100%;height:100%;border:0;position:absolute;inset:0}.placeholder{position:absolute;inset:0;display:grid;place-content:center;text-align:center;color:var(--muted);padding:20px}.placeholder b{font-size:18px;color:white;margin-bottom:7px}
+.overlay{position:absolute;z-index:3;left:5%;top:7%;padding:8px 12px;background:#080b12cc;border:1px solid #ffffff55;border-radius:9px;font-weight:800;text-shadow:0 2px 4px #000;cursor:move;touch-action:none;user-select:none;max-width:90%;white-space:pre-wrap}.overlay.goal{top:auto;bottom:7%;left:5%;}.overlay.clock{left:auto;right:5%;top:7%}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}.field label{font-size:12px;color:var(--muted)}input,select,button{font:inherit;border-radius:9px;border:1px solid var(--line);background:#0a1020;color:white;padding:11px;min-width:0}input{width:100%}button{cursor:pointer;background:#272044;border-color:#51418a;font-weight:650}button.secondary{background:#182235;border-color:#334155}button:active{transform:scale(.98)}.hint{color:var(--muted);font-size:12px;line-height:1.5}.section{font-size:13px;color:#c4b5fd;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:5px 0 12px}.stat{color:#a5f3fc;font-size:12px}.pill{display:inline-block;border-radius:99px;padding:4px 8px;background:#17283a;color:#a5f3fc;font-size:11px}
+@media(max-width:850px){main{grid-template-columns:1fr;padding:12px}header{padding:13px}.panel{padding:12px}}
+</style></head>
+<body>
+<header><h1>👻 GHOST <span>STREAM</span> / LIVE STUDIO</h1><span class="tag">PS5 BROADCAST VIEWER</span></header>
+<main>
+<section class="panel">
+ <div class="row" style="justify-content:space-between;align-items:center;margin:0 0 10px"><div class="section" style="margin:0">Live preview</div><span class="pill" id="status">NO SOURCE CONNECTED</span></div>
+ <div class="stage" id="stage"><div class="placeholder" id="placeholder"><div><b>Your PS5 gameplay appears here</b>Start a Twitch or YouTube broadcast on PS5, then connect it from the panel.</div></div></div>
+ <p class="hint">Drag overlay tiles around the preview. This is a browser-side composition preview. It does not modify the original Twitch/YouTube broadcast.</p>
+ <div class="row"><button class="secondary" id="addText">＋ Add text</button><button class="secondary" id="addGoal">＋ Add goal</button><button class="secondary" id="addClock">＋ Add clock</button><button class="secondary" id="clear">Clear overlays</button></div>
+</section>
+<aside class="panel">
+ <div class="section">1 · Connect PS5 gameplay</div>
+ <div class="field"><label>Broadcast platform</label><select id="platform"><option value="twitch">Twitch</option><option value="youtube">YouTube Live</option></select></div>
+ <div class="field"><label id="sourceLabel">Twitch channel username</label><input id="source" placeholder="your_twitch_username" autocomplete="off"></div>
+ <button id="connect" style="width:100%">Connect live broadcast</button>
+ <p class="hint" id="sourceHint">On PS5: press Create → Broadcast → Twitch → Go Live. Enter your Twitch username here.</p>
+ <hr style="border:0;border-top:1px solid var(--line);margin:17px 0">
+ <div class="section">2 · Overlay controls</div>
+ <div class="field"><label>Overlay text</label><input id="textValue" value="CRUDZII · LIVE"></div>
+ <div class="field"><label>Text size</label><input id="textSize" type="range" min="12" max="42" value="22"></div>
+ <div class="field"><label>Accent colour</label><input id="accent" type="color" value="#22d3ee" style="height:42px;padding:4px"></div>
+ <button id="apply" style="width:100%">Apply to selected / latest overlay</button>
+ <hr style="border:0;border-top:1px solid var(--line);margin:17px 0">
+ <div class="section">3 · Goal tracker</div>
+ <div class="field"><label>Goal title</label><input id="goalTitle" value="Road to 100 followers"></div>
+ <div class="row"><input id="goalNow" type="number" min="0" value="25" aria-label="Current goal"><input id="goalTarget" type="number" min="1" value="100" aria-label="Goal target"></div>
+ <button id="updateGoal" class="secondary" style="width:100%;margin-top:8px">Update goal overlay</button>
+ <p class="hint">Your layout is saved on this device automatically. This page can be opened on your iPhone while the PS5 broadcasts directly to Twitch or YouTube.</p>
+</aside>
+</main>
+<script>
+(()=>{const $=id=>document.getElementById(id),stage=$('stage');let latest=null,clockTimer=null;
+const save=()=>{try{localStorage.setItem('ghost-live-layout',JSON.stringify({platform:$('platform').value,source:$('source').value,overlays:[...stage.querySelectorAll('.overlay')].map(e=>({text:e.textContent,cls:e.className,style:e.getAttribute('style'),left:e.style.left,top:e.style.top}))}))}catch{}};
+function addOverlay(text,cls='overlay'){const e=document.createElement('div');e.className=cls;e.textContent=text;e.style.left=cls.includes('goal')?'5%':'5%';e.style.top=cls.includes('goal')?'auto':'7%';if(cls.includes('goal'))e.style.bottom='7%';stage.append(e);latest=e;drag(e);save();return e}
+function drag(el){let sx=0,sy=0,ox=0,oy=0;el.addEventListener('pointerdown',ev=>{el.setPointerCapture(ev.pointerId);sx=ev.clientX;sy=ev.clientY;ox=el.offsetLeft;oy=el.offsetTop;latest=el});el.addEventListener('pointermove',ev=>{if(!el.hasPointerCapture(ev.pointerId))return;const r=stage.getBoundingClientRect();el.style.left=Math.max(0,Math.min(r.width-el.offsetWidth,ox+ev.clientX-sx))+'px';el.style.top=Math.max(0,Math.min(r.height-el.offsetHeight,oy+ev.clientY-sy))+'px';el.style.bottom='auto'});el.addEventListener('pointerup',save)}
+function connect(){const platform=$('platform').value,source=$('source').value.trim();if(!source){alert('Enter your live channel or video ID first.');return}let url='';if(platform==='twitch'){const channel=source.replace(/^@/,'').replace(/[^a-zA-Z0-9_]/g,'');if(!channel){alert('Enter a valid Twitch channel username.');return}url='https://player.twitch.tv/?channel='+encodeURIComponent(channel)+'&parent='+encodeURIComponent(location.hostname)+'&muted=true&autoplay=true'}else{let id=source.match(/(?:youtu\.be\/|youtube\.com\/(?:live\/|watch\?v=|embed\/))([\w-]{11})/)?.[1]||source;if(!/^[\w-]{11}$/.test(id)){alert('Paste a YouTube live video URL or its 11-character video ID.');return}url='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1'}const old=stage.querySelector('iframe');if(old)old.remove();const f=document.createElement('iframe');f.src=url;f.allow='autoplay; encrypted-media; picture-in-picture';f.allowFullscreen=true;f.title='PS5 live gameplay';stage.prepend(f);$('placeholder').style.display='none';$('status').textContent='SOURCE LOADED · '+platform.toUpperCase();save()}
+$('platform').addEventListener('change',()=>{const yt=$('platform').value==='youtube';$('sourceLabel').textContent=yt?'YouTube live video URL or ID':'Twitch channel username';$('source').placeholder=yt?'https://youtube.com/live/…':'your_twitch_username';$('sourceHint').textContent=yt?'Start a YouTube broadcast on PS5, then paste the live video URL here.':'On PS5: press Create → Broadcast → Twitch → Go Live. Enter your Twitch username here.'});
+$('connect').onclick=connect;$('addText').onclick=()=>addOverlay($('textValue').value||'YOUR TEXT');$('addGoal').onclick=()=>addOverlay($('goalTitle').value+' · '+$('goalNow').value+'/'+$('goalTarget').value,'overlay goal');$('addClock').onclick=()=>{const e=addOverlay(new Date().toLocaleTimeString(),'overlay clock');if(clockTimer)clearInterval(clockTimer);clockTimer=setInterval(()=>e.textContent=new Date().toLocaleTimeString(),1000)};
+$('clear').onclick=()=>{stage.querySelectorAll('.overlay').forEach(e=>e.remove());latest=null;save()};
+$('apply').onclick=()=>{if(!latest)latest=stage.querySelector('.overlay');if(!latest){alert('Add an overlay first.');return}latest.textContent=$('textValue').value;latest.style.fontSize=$('textSize').value+'px';latest.style.borderColor=$('accent').value;latest.style.color=$('accent').value;save()};
+$('updateGoal').onclick=()=>{let e=stage.querySelector('.overlay.goal');if(!e)e=addOverlay('','overlay goal');e.textContent=$('goalTitle').value+' · '+$('goalNow').value+'/'+$('goalTarget').value;e.style.borderColor=$('accent').value;save()};
+try{const d=JSON.parse(localStorage.getItem('ghost-live-layout')||'null');if(d){$('platform').value=d.platform||'twitch';$('source').value=d.source||'';d.overlays?.forEach(o=>{const e=addOverlay(o.text,o.cls);if(o.style)e.setAttribute('style',o.style);if(o.left)e.style.left=o.left;if(o.top)e.style.top=o.top})}}catch{}
+})();
+</script>
+</body></html>
