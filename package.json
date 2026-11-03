@@ -1,25 +1,14 @@
 {
-  "name": "ghost-bridge",
-  "version": "1.0.1",
+  "name": "ghost-stream",
+  "version": "2.0.0",
   "private": true,
-  "description": "Ghost Bridge: Bedrock relay with mobile schematic preview controls",
+  "description": "Ghost Stream private PS5 streaming management studio",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "check": "node --check index.js && node --check server.js && node --check ghost.js"
+    "check": "node --check index.js && node --check stream-server.js && node scripts/check-frontend.js"
   },
   "engines": {
-    "node": ">=24"
-  },
-  "dependencies": {
-    "bedrock-portal": "*",
-    "bedrock-protocol": "^3.60.1",
-    "minecraft-data": "*",
-    "prismarine-auth": "*",
-    "prismarine-nbt": "*",
-    "prismarine-schematic": "*",
-    "vec3": "*",
-    "express": "*",
-    "prismarine-block": "*"
+    "node": ">=20"
   }
 }
